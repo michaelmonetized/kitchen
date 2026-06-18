@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Lesson 0001 — Four Layers, Three Modes</title>
+  <style>
+    :root { --text: #1a1a1a; --muted: #555; --accent: #2563eb; --bg: #fafaf9; --card: #fff; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      font-size: 18px;
+      line-height: 1.55;
+      color: var(--text);
+      background: var(--bg);
+      margin: 0;
+      padding: 2rem 1.25rem 4rem;
+      max-width: 42rem;
+      margin-inline: auto;
+    }
+    h1 { font-size: 1.75rem; font-weight: 600; margin-bottom: 0.25rem; }
+    .subtitle { color: var(--muted); font-size: 1rem; margin-bottom: 2rem; }
+    h2 { font-size: 1.15rem; margin-top: 2rem; border-bottom: 1px solid #e5e5e5; padding-bottom: 0.35rem; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.92rem; margin: 1rem 0; }
+    th, td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid #eee; }
+    th { font-weight: 600; }
+    .card { background: var(--card); border: 1px solid #e8e8e8; padding: 1rem 1.15rem; margin: 1rem 0; }
+    .quiz { margin-top: 2rem; }
+    .quiz label { display: block; margin: 0.5rem 0; cursor: pointer; }
+    .quiz input { margin-right: 0.5rem; }
+    #feedback { margin-top: 1rem; font-weight: 600; min-height: 1.5rem; }
+    a { color: var(--accent); }
+    .footer { margin-top: 3rem; font-size: 0.9rem; color: var(--muted); }
+    .primary-source { font-size: 0.9rem; margin-top: 2rem; }
+  </style>
+</head>
+<body>
+  <h1>Four Layers, Three Modes</h1>
+  <p class="subtitle">Kitchen in one lesson — storage, sync, work, collaboration.</p>
+
+  <p>Kitchen is not "git in the cloud." It unifies four layers that today are separate tools:</p>
+
+  <table>
+    <thead><tr><th>Layer</th><th>Kitchen</th><th>You feel</th></tr></thead>
+    <tbody>
+      <tr><td>Storage</td><td>Files + Versions as rows</td><td>History without commits</td></tr>
+      <tr><td>Sync</td><td>WebSocket push</td><td>Save → peers update</td></tr>
+      <tr><td>Work</td><td>Mirror at <code>$HOME/Projects</code></td><td>Your normal editor</td></tr>
+      <tr><td>Collaboration</td><td>Three modes (below)</td><td>Solo, fork, or pair</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Three modes of work</h2>
+  <div class="card">
+    <p><strong>Mode 1 — Solo live sync.</strong> You save. <code>versions.insert</code>. Other devices update.</p>
+    <p><strong>Mode 2 — Async concurrent.</strong> Two saves → two heads → Pierre Merge.</p>
+    <p><strong>Mode 3 — Live collab.</strong> Pair session → ops → checkpoint → one version.</p>
+  </div>
+
+  <p>Live <em>sync</em> (seconds, durable) ≠ live <em>collab</em> (sub-second ops, checkpoint to persist). Voice stays on Discord — Kitchen syncs bytes only.</p>
+
+  <h2>Retrieval practice</h2>
+  <div class="quiz card" id="quiz">
+    <p>Which mode is pair programming with a Collab agent?</p>
+    <label><input type="radio" name="q" value="a" /> Mode 1 — solo live sync</label>
+    <label><input type="radio" name="q" value="b" /> Mode 2 — async concurrent</label>
+    <label><input type="radio" name="q" value="c" /> Mode 3 — live collab</label>
+    <button type="button" id="check" style="margin-top:1rem;padding:0.4rem 0.8rem;">Check</button>
+    <div id="feedback"></div>
+  </div>
+
+  <p class="primary-source"><strong>Primary source:</strong> <a href="../docs/the-kitchen-way.md">The Kitchen Way</a> (repo doc).</p>
+
+  <p>More: <a href="../docs/concepts/three-modes-of-work.md">Three Modes of Work</a> · <a href="../docs/reference/quick-reference.md">Quick Reference</a> · <a href="../GLOSSARY.md">Glossary</a></p>
+
+  <p class="footer">Ask your agent teacher any follow-up — terminology should stay tight per <a href="../GLOSSARY.md">GLOSSARY.md</a>.</p>
+
+  <script>
+    document.getElementById("check").onclick = function () {
+      const sel = document.querySelector('input[name="q"]:checked');
+      const fb = document.getElementById("feedback");
+      if (!sel) { fb.textContent = "Pick an answer."; fb.style.color = "#b45309"; return; }
+      if (sel.value === "c") {
+        fb.textContent = "Correct — Collab agent + relay, checkpoint inserts version.";
+        fb.style.color = "#15803d";
+      } else {
+        fb.textContent = "Not quite — pair programming is Mode 3 (live collab).";
+        fb.style.color = "#b91c1c";
+      }
+    };
+  </script>
+</body>
+</html>

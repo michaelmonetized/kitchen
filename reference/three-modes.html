@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Kitchen — Three Modes Cheat Sheet</title>
+  <style>
+    :root { --text: #1a1a1a; --muted: #555; --accent: #2563eb; --bg: #fafaf9; }
+    * { box-sizing: border-box; }
+    body {
+      font-family: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, serif;
+      font-size: 15px;
+      line-height: 1.45;
+      color: var(--text);
+      background: var(--bg);
+      margin: 0;
+      padding: 1.5rem 1.25rem 2rem;
+      max-width: 52rem;
+      margin-inline: auto;
+    }
+    h1 { font-size: 1.35rem; font-weight: 600; margin: 0 0 0.15rem; }
+    .subtitle { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.25rem; }
+    h2 { font-size: 0.95rem; margin: 1.25rem 0 0.5rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); }
+    table { width: 100%; border-collapse: collapse; font-size: 0.88rem; margin: 0.5rem 0 1rem; }
+    th, td { text-align: left; padding: 0.35rem 0.5rem; border: 1px solid #ddd; vertical-align: top; }
+    th { background: #f3f3f2; font-weight: 600; }
+    .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .box { border: 1px solid #e0e0e0; padding: 0.65rem 0.75rem; background: #fff; }
+    .box p { margin: 0.35rem 0; }
+    .oneliner { font-style: italic; margin: 0.75rem 0; padding: 0.5rem 0.65rem; background: #fff; border-left: 3px solid var(--accent); }
+    a { color: var(--accent); text-decoration: none; }
+    .footer { margin-top: 1.5rem; font-size: 0.8rem; color: var(--muted); }
+    @media print {
+      body { padding: 0.5in; font-size: 11pt; background: #fff; }
+      a { color: var(--text); }
+      .cols { gap: 0.5rem; }
+    }
+  </style>
+</head>
+<body>
+  <h1>Kitchen Quick Reference</h1>
+  <p class="subtitle">Printable cheat sheet — storage, sync, work, collaboration</p>
+
+  <p class="oneliner">Cloud rows, local mirror, live sync, human merge, optional pair collab.</p>
+
+  <h2>Four layers</h2>
+  <table>
+    <thead><tr><th>Layer</th><th>Mechanism</th><th>You feel</th></tr></thead>
+    <tbody>
+      <tr><td>Storage</td><td>File + Version rows</td><td>History without commits</td></tr>
+      <tr><td>Sync</td><td>WebSocket push</td><td>Save → peers update in seconds</td></tr>
+      <tr><td>Work</td><td>Mirror at <code>$HOME/Projects</code></td><td>Any editor, any terminal</td></tr>
+      <tr><td>Collaboration</td><td>Three modes (below)</td><td>Solo, fork, or pair</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Three modes of work</h2>
+  <table>
+    <thead><tr><th>Mode</th><th>Trigger</th><th>Durable write</th><th>Latency</th></tr></thead>
+    <tbody>
+      <tr><td><strong>1 — Solo live sync</strong></td><td>Save in editor</td><td><code>versions.insert</code></td><td>Seconds</td></tr>
+      <tr><td><strong>2 — Async concurrent</strong></td><td>Independent saves</td><td>Two heads → Pierre Merge</td><td>When you merge</td></tr>
+      <tr><td><strong>3 — Live collab</strong></td><td><code>kitchen pair join</code></td><td>Checkpoint → insert</td><td>Sub-second ops</td></tr>
+    </tbody>
+  </table>
+
+  <div class="cols">
+    <div>
+      <h2>Six invariants</h2>
+      <div class="box">
+        <p>1. Files are rows</p>
+        <p>2. Versions are insert-only</p>
+        <p>3. Mirror is a view</p>
+        <p>4. Sync is live</p>
+        <p>5. Merge is human</p>
+        <p>6. Collab → checkpoint</p>
+      </div>
+    </div>
+    <div>
+      <h2>Three entities</h2>
+      <div class="box">
+        <p><strong>User</strong> — identity</p>
+        <p><strong>Role</strong> — permissions</p>
+        <p><strong>File</strong> — orgs, projects, folders, source, binaries</p>
+        <p style="margin-top:0.5rem;color:var(--muted);font-size:0.85rem;">Collab sessions are protocol, not a fourth table.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>Live sync vs live collab</h2>
+  <table>
+    <thead><tr><th></th><th>Live sync</th><th>Live collab</th></tr></thead>
+    <tbody>
+      <tr><td>What moves</td><td>Version inserts</td><td>Edit ops + presence</td></tr>
+      <tr><td>Persistence</td><td>Every save</td><td>Checkpoint only</td></tr>
+      <tr><td>Bridge</td><td>Desktop sync client</td><td>Collab agent → relay</td></tr>
+      <tr><td>Voice</td><td colspan="2" style="text-align:center;">External — Discord, Meet, phone</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Key events</h2>
+  <div class="cols">
+    <div class="box">
+      <p><strong>Sync Store:</strong></p>
+      <p><code>file.insert</code> · <code>file.metadata</code> · <code>version.insert</code> · <code>file.pointer</code></p>
+    </div>
+    <div class="box">
+      <p><strong>Collab relay:</strong></p>
+      <p><code>session.start</code> · <code>op.apply</code> · <code>presence.update</code> · <code>checkpoint.complete</code> · <code>session.stale</code></p>
+    </div>
+  </div>
+
+  <p class="footer">
+    Full docs: <a href="../docs/the-kitchen-way.md">The Kitchen Way</a> ·
+    <a href="../docs/reference/quick-reference.md">Quick Reference (md)</a> ·
+    <a href="../lessons/0001-four-layers-and-three-modes.html">Lesson 0001</a> ·
+    <a href="../GLOSSARY.md">Glossary</a>
+  </p>
+</body>
+</html>

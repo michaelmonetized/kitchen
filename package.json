@@ -1,0 +1,22 @@
+{
+  "name": "kitchen",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "web"
+  ],
+  "scripts": {
+    "build": "npm run build -w @kitchen/collab-protocol && npm run build -w @kitchen/collab-relay && npm run build -w @kitchen/collab-agent",
+    "spike:pair": "npm run build && node scripts/spike-pair.mjs",
+    "test": "npm run spike:pair",
+    "dev:web": "npm run dev -w web",
+    "build:web": "npm run build -w web",
+    "loop": "bash loop.sh",
+    "loop:status": "node scripts/task-loop.mjs status",
+    "loop:next": "node scripts/task-loop.mjs next",
+    "setup:env": "bash scripts/setup-env.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
