@@ -9,6 +9,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
@@ -24,6 +25,8 @@ import {
   type MergeRow,
   type PickSide,
 } from "@/lib/merge/diffLinePick";
+import { encodeTextContent } from "@/lib/content";
+import { getErrorMessage } from "@/lib/errors";
 
 const PICK_OPTIONS: PickSide[] = ["left", "right", "both", "skip"];
 
@@ -151,6 +154,7 @@ export function MergeView({
   const [preview, setPreview] = useState("");
   const [committing, setCommitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
 
   const context = useQuery(api.queries.getForkMergeContext, {
     fileId: fileId as Id<"files">,
@@ -173,22 +177,21 @@ export function MergeView({
     setCommitting(true);
     setError(null);
     try {
-      const bytes = new TextEncoder().encode(preview);
       await insertMerge({
         fileId: fileId as Id<"files">,
-        content: bytes.buffer as ArrayBuffer,
+        content: encodeTextContent(preview),
         parentVersionIds: [
           left._id as Id<"versions">,
           right._id as Id<"versions">,
         ],
       });
-      window.location.href = `/app/projects/${projectId}/files/${fileId}`;
+      router.push(`/app/projects/${projectId}/files/${fileId}`);
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Merge failed");
+      setError(getErrorMessage(e, "Merge failed"));
     } finally {
       setCommitting(false);
     }
-  }, [fileId, insertMerge, left, preview, projectId, right]);
+  }, [fileId, insertMerge, left, preview, projectId, right, router]);
 
   if (context === undefined) {
     return <p className="text-stone-500">Loading merge context…</p>;

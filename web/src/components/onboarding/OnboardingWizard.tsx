@@ -3,17 +3,11 @@
 import { useMutation, useQuery } from "convex/react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { getErrorMessage } from "@/lib/errors";
+import { slugify } from "@/lib/slugify";
 import { api } from "../../../convex/_generated/api";
 
 type Step = "welcome" | "choose" | "create-team" | "join";
-
-function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 export function OnboardingWizard() {
   const router = useRouter();
@@ -35,11 +29,6 @@ export function OnboardingWizard() {
     );
   }
 
-  if (orgs.length > 0) {
-    router.replace("/app");
-    return null;
-  }
-
   async function handlePersonalOrg() {
     setLoading(true);
     setError(null);
@@ -47,7 +36,7 @@ export function OnboardingWizard() {
       await ensurePersonalOrg({});
       router.replace("/app");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create workspace");
+      setError(getErrorMessage(err, "Failed to create workspace"));
       setLoading(false);
     }
   }
@@ -60,7 +49,7 @@ export function OnboardingWizard() {
       await createOrg({ name: orgName, slug: orgSlug || slugify(orgName) });
       router.replace("/app");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to create organization");
+      setError(getErrorMessage(err, "Failed to create organization"));
       setLoading(false);
     }
   }

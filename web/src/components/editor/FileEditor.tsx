@@ -7,6 +7,8 @@ import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { CollabPanel } from "../collab/CollabPanel";
 import { useCollabSession } from "../collab/useCollabSession";
+import { encodeTextContent } from "@/lib/content";
+import { getErrorMessage } from "@/lib/errors";
 import { ForkMergeModal } from "./ForkMergeModal";
 
 export function FileEditor({
@@ -22,6 +24,7 @@ export function FileEditor({
   const insertVersion = useMutation(api.versions.insert);
   const [draft, setDraft] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
   const [showForkModal, setShowForkModal] = useState(false);
   const forkedBeforeSaveRef = useRef(false);
   const awaitingForkCheckRef = useRef(false);
@@ -57,13 +60,15 @@ export function FileEditor({
     forkedBeforeSaveRef.current = Boolean(data?.file?.forked);
     awaitingForkCheckRef.current = true;
     setSaving(true);
+    setSaveError(null);
     try {
-      const bytes = new TextEncoder().encode(buffer);
       await insertVersion({
         fileId: fileId as Id<"files">,
-        content: bytes.buffer as ArrayBuffer,
+        content: encodeTextContent(buffer),
       });
       setDraft(null);
+    } catch (err) {
+      setSaveError(getErrorMessage(err, "Save failed"));
     } finally {
       setSaving(false);
     }
@@ -116,6 +121,9 @@ export function FileEditor({
 
   return (
     <div className="flex h-full flex-col gap-3">
+      {saveError && (
+        <p className="rounded-md bg-red-50 px-3 py-2 text-sm text-red-700">{saveError}</p>
+      )}
       <CollabPanel
         state={collabState}
         onStart={startSession}

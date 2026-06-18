@@ -3,19 +3,12 @@
 import { useMutation, useQuery } from "convex/react";
 import { useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
+import { slugify } from "@/lib/slugify";
 import { api } from "../../../convex/_generated/api";
 
 type Tab = "organization" | "members" | "roles";
 
 const PERMISSION_OPTIONS = ["read", "write", "admin"] as const;
-
-function slugify(value: string) {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-|-$/g, "");
-}
 
 export function SettingsView() {
   const orgs = useQuery(api.admin.listOrgsForUser, {});
