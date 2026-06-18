@@ -39,27 +39,23 @@ function getConvexProdUrls() {
     encoding: "utf8",
     shell: true,
   });
-  const urlMatch = output.match(
-    /NEXT_PUBLIC_CONVEX_URL=(https:\/\/[a-z0-9-]+\.convex\.cloud)/,
-  );
-  const cloudUrl = urlMatch?.[1];
+  const cloudMatch = output.match(/https:\/\/[a-z0-9-]+\.convex\.cloud/);
+  const cloudUrl = cloudMatch?.[0];
   if (!cloudUrl) return {};
   const siteUrl = cloudUrl.replace(".convex.cloud", ".convex.site");
-  const deploymentMatch = output.match(
-    /\[Production\][^\n]*\(([^)]+)\)/,
-  );
-  const deployment = deploymentMatch?.[1]?.trim();
+  const slug = cloudUrl.match(/https:\/\/([a-z0-9-]+)\.convex\.cloud/)?.[1];
   return {
     NEXT_PUBLIC_CONVEX_URL: cloudUrl,
     NEXT_PUBLIC_CONVEX_SITE_URL: siteUrl,
-    ...(deployment ? { CONVEX_DEPLOYMENT: deployment } : {}),
+    ...(slug ? { CONVEX_DEPLOYMENT: `prod:${slug}` } : {}),
   };
 }
 
-function syncVercelProductionEnv(convexProd = {}) {
+function syncVercelProductionEnv(convexProd = {}, siteUrl) {
   const env = {
     ...parseEnvFile(join(webDir, ".env.local")),
     ...convexProd,
+    ...(siteUrl ? { NEXT_PUBLIC_SITE_URL: siteUrl } : {}),
   };
   const keys = [
     "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY",
@@ -110,9 +106,17 @@ if (clerkIssuer && !clerkIssuer.includes("placeholder")) {
 }
 
 const convexProd = getConvexProdUrls();
-run("npx convex deploy --yes");
+if (!convexProd.NEXT_PUBLIC_CONVEX_URL) {
+  console.error("Could not resolve production Convex URL from convex deploy --dry-run");
+  process.exit(1);
+}
+console.log(`  production Convex → ${convexProd.NEXT_PUBLIC_CONVEX_URL}`);
 
-syncVercelProductionEnv(convexProd);
+const siteUrl =
+  process.env.NEXT_PUBLIC_SITE_URL ?? "https://kitchen-gilt-nine.vercel.app";
+syncVercelProductionEnv(convexProd, siteUrl);
+
+run("npx convex deploy --yes");
 
 runVercel("vercel deploy --prod --yes");
 

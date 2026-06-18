@@ -89,9 +89,19 @@ async function getClerkConvexToken() {
 }
 
 async function runConvexFlow() {
-  const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL;
+  const convexUrl = process.env.SMOKE_CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!convexUrl) {
-    fail("NEXT_PUBLIC_CONVEX_URL required for authenticated smoke flow");
+    fail(
+      "NEXT_PUBLIC_CONVEX_URL or SMOKE_CONVEX_URL required for authenticated smoke flow",
+    );
+  }
+  if (baseUrl.startsWith("http") && !baseUrl.includes("localhost")) {
+    const devMarker = "canny-perch-896";
+    if (convexUrl.includes(devMarker)) {
+      fail(
+        `remote smoke must not use dev Convex (${devMarker}); set SMOKE_CONVEX_URL to production`,
+      );
+    }
   }
 
   const jwt = await getClerkConvexToken();
