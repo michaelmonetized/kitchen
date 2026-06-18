@@ -15,9 +15,17 @@ export type SessionState = {
   versionCounter: number;
 };
 
+export type CheckpointContext = {
+  sessionId: string;
+  filePath: string;
+  content: string;
+  userId: string;
+};
+
 export type CollabRelayOptions = {
   port?: number;
   host?: string;
+  onCheckpoint?: (ctx: CheckpointContext) => Promise<string | null>;
 };
 
 export class CollabRelay {
@@ -25,10 +33,14 @@ export class CollabRelay {
   private server: WebSocketServer | null = null;
   private readonly port: number;
   private readonly host: string;
+  private readonly onCheckpoint?: (
+    ctx: CheckpointContext
+  ) => Promise<string | null>;
 
   constructor(options: CollabRelayOptions = {}) {
     this.port = options.port ?? 9473;
     this.host = options.host ?? "127.0.0.1";
+    this.onCheckpoint = options.onCheckpoint;
   }
 
   get boundPort(): number {
@@ -136,15 +148,17 @@ export class CollabRelay {
         case "checkpoint": {
           const session = this.sessions.get(msg.sessionId);
           if (!session) return;
-          session.versionCounter += 1;
-          const versionId = `v${session.versionCounter}`;
-          const complete: CollabMessage = {
-            type: "checkpoint.complete",
+          void this.completeCheckpoint(session, msg.sessionId, msg.userId);
+          break;
+        }
+        case "session.reportStale": {
+          const session = this.sessions.get(msg.sessionId);
+          if (!session) return;
+          this.broadcast(session, {
+            type: "session.stale",
             sessionId: msg.sessionId,
-            versionId,
-            content: session.content,
-          };
-          this.broadcast(session, complete);
+            reason: msg.reason,
+          });
           break;
         }
         case "session.leave": {
@@ -173,6 +187,39 @@ export class CollabRelay {
         this.sessions.delete(sessionId);
       }
     });
+  }
+
+  private async completeCheckpoint(
+    session: SessionState,
+    sessionId: string,
+    userId: string
+  ): Promise<void> {
+    let versionId: string;
+    if (this.onCheckpoint) {
+      const remote = await this.onCheckpoint({
+        sessionId,
+        filePath: session.filePath,
+        content: session.content,
+        userId,
+      });
+      if (remote) {
+        versionId = remote;
+      } else {
+        session.versionCounter += 1;
+        versionId = `v${session.versionCounter}`;
+      }
+    } else {
+      session.versionCounter += 1;
+      versionId = `v${session.versionCounter}`;
+    }
+
+    const complete: CollabMessage = {
+      type: "checkpoint.complete",
+      sessionId,
+      versionId,
+      content: session.content,
+    };
+    this.broadcast(session, complete);
   }
 
   private broadcast(session: SessionState, msg: CollabMessage): void {

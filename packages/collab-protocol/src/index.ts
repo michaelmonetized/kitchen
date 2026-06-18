@@ -6,6 +6,7 @@ export type CollabMessage =
   | { type: "checkpoint"; sessionId: string; userId: string }
   | { type: "checkpoint.complete"; sessionId: string; versionId: string; content: string }
   | { type: "session.stale"; sessionId: string; reason: string }
+  | { type: "session.reportStale"; sessionId: string; reason: string }
   | { type: "error"; message: string };
 
 export type ReplaceOp = {

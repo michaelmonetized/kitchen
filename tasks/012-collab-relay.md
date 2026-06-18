@@ -9,13 +9,13 @@ Wire the existing `packages/collab-protocol` and `packages/collab-relay` into th
 
 ## Done criteria
 
-- [ ] `web/` depends on `@kitchen/collab-protocol` (workspace link)
-- [ ] Collab relay runs as Node service or Vercel-adjacent WS (document deployment)
-- [ ] Web UI: "Start pair session" / "Join session" on file editor
-- [ ] Ops apply to in-memory buffer; presence shown (cursors optional)
-- [ ] Checkpoint calls Convex `versions.insert` via relay callback
-- [ ] `session.stale` handled when external save during session
-- [ ] Voice/chat not built — link tooltip "Use Discord/Meet for voice"
+- [x] `web/` depends on `@kitchen/collab-protocol` (workspace link)
+- [x] Collab relay runs as Node service or Vercel-adjacent WS (document deployment)
+- [x] Web UI: "Start pair session" / "Join session" on file editor
+- [x] Ops apply to in-memory buffer; presence shown (cursors optional)
+- [x] Checkpoint calls Convex `versions.insert` via relay callback
+- [x] `session.stale` handled when external save during session
+- [x] Voice/chat not built — link tooltip "Use Discord/Meet for voice"
 
 ## Steps
 

@@ -8,6 +8,8 @@
  * @module
  */
 
+import type * as admin from "../admin.js";
+import type * as collabRelay from "../collabRelay.js";
 import type * as files from "../files.js";
 import type * as http from "../http.js";
 import type * as lib_authz from "../lib/authz.js";
@@ -15,6 +17,7 @@ import type * as lib_invariants from "../lib/invariants.js";
 import type * as lib_session from "../lib/session.js";
 import type * as queries from "../queries.js";
 import type * as roles from "../roles.js";
+import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 import type * as versions from "../versions.js";
 
@@ -25,6 +28,8 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  admin: typeof admin;
+  collabRelay: typeof collabRelay;
   files: typeof files;
   http: typeof http;
   "lib/authz": typeof lib_authz;
@@ -32,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   "lib/session": typeof lib_session;
   queries: typeof queries;
   roles: typeof roles;
+  seed: typeof seed;
   users: typeof users;
   versions: typeof versions;
 }>;

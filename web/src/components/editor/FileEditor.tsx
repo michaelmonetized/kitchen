@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
+import { CollabPanel } from "../collab/CollabPanel";
+import { useCollabSession } from "../collab/useCollabSession";
 import { ForkMergeModal } from "./ForkMergeModal";
 
 export function FileEditor({
@@ -28,7 +30,30 @@ export function FileEditor({
   const dirty = draft !== null;
   const buffer = draft ?? serverContent;
 
+  const {
+    state: collabState,
+    startSession,
+    joinSession,
+    disconnect: leaveCollab,
+    checkpointNow,
+    onLocalEdit,
+    rebaseFromServer,
+  } = useCollabSession({
+    fileId,
+    buffer,
+    setBuffer: (value) => setDraft(value),
+    serverContent,
+    serverVersionId: data?.version?._id,
+    onCheckpointComplete: () => setDraft(null),
+  });
+
+  const inCollab = collabState.connected && !collabState.stale;
+
   const save = useCallback(async () => {
+    if (inCollab) {
+      checkpointNow();
+      return;
+    }
     forkedBeforeSaveRef.current = Boolean(data?.file?.forked);
     awaitingForkCheckRef.current = true;
     setSaving(true);
@@ -42,7 +67,14 @@ export function FileEditor({
     } finally {
       setSaving(false);
     }
-  }, [buffer, data?.file?.forked, fileId, insertVersion]);
+  }, [
+    buffer,
+    checkpointNow,
+    data?.file?.forked,
+    fileId,
+    inCollab,
+    insertVersion,
+  ]);
 
   useEffect(() => {
     if (!awaitingForkCheckRef.current) return;
@@ -84,6 +116,14 @@ export function FileEditor({
 
   return (
     <div className="flex h-full flex-col gap-3">
+      <CollabPanel
+        state={collabState}
+        onStart={startSession}
+        onJoin={joinSession}
+        onLeave={leaveCollab}
+        onCheckpoint={checkpointNow}
+        onRebase={rebaseFromServer}
+      />
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <span className="font-medium text-stone-900">{String(file.name)}</span>
@@ -95,22 +135,36 @@ export function FileEditor({
               forked — merge
             </Link>
           )}
+          {inCollab ? (
+            <span className="rounded bg-emerald-100 px-2 py-0.5 text-xs text-emerald-800">
+              pairing live
+            </span>
+          ) : null}
         </div>
         <button
           type="button"
           onClick={() => void save()}
-          disabled={!dirty || saving}
+          disabled={(!dirty && !inCollab) || saving || collabState.stale}
           className="rounded-md bg-stone-900 px-3 py-1.5 text-sm text-white disabled:opacity-40"
         >
-          {saving ? "Saving…" : dirty ? "Save" : "Saved"}
+          {saving || collabState.checkpointing
+            ? "Saving…"
+            : inCollab
+              ? "Checkpoint"
+              : dirty
+                ? "Save"
+                : "Saved"}
         </button>
       </div>
       <textarea
         value={buffer}
         onChange={(e) => {
-          setDraft(e.target.value);
+          const next = e.target.value;
+          setDraft(next);
+          onLocalEdit(next);
         }}
-        className="min-h-[60vh] flex-1 resize-none rounded-lg border border-stone-200 bg-white p-4 font-mono text-sm leading-relaxed text-stone-900 outline-none focus:border-stone-400"
+        disabled={collabState.stale}
+        className="min-h-[60vh] flex-1 resize-none rounded-lg border border-stone-200 bg-white p-4 font-mono text-sm leading-relaxed text-stone-900 outline-none focus:border-stone-400 disabled:bg-stone-50"
         spellCheck={false}
       />
       {showForkModal && (
