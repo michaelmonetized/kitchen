@@ -13,14 +13,12 @@ function FileTreeNode({
   forked,
 }: {
   projectId: string;
-  fileId: string;
+  fileId: Id<"files">;
   name: string;
   type: string;
   forked?: boolean;
 }) {
-  const children = useQuery(api.queries.children, {
-    parentId: fileId as Id<"files">,
-  });
+  const children = useQuery(api.queries.children, { parentId: fileId });
 
   if (type === "file") {
     return (
@@ -57,7 +55,7 @@ function FileTreeNode({
               <FileTreeNode
                 key={String(child._id)}
                 projectId={projectId}
-                fileId={String(child._id)}
+                fileId={child._id}
                 name={String(child.name)}
                 type={String(child.type)}
                 forked={Boolean(child.forked)}
@@ -75,11 +73,9 @@ export function FileTree({
   rootId,
 }: {
   projectId: string;
-  rootId: string;
+  rootId: Id<"files">;
 }) {
-  const children = useQuery(api.queries.children, {
-    parentId: rootId as Id<"files">,
-  });
+  const children = useQuery(api.queries.children, { parentId: rootId });
 
   if (children === undefined) {
     return <p className="text-sm text-stone-500">Loading tree…</p>;
@@ -91,7 +87,7 @@ export function FileTree({
         <FileTreeNode
           key={String(child._id)}
           projectId={projectId}
-          fileId={String(child._id)}
+          fileId={child._id}
           name={String(child.name)}
           type={String(child.type)}
           forked={Boolean(child.forked)}

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Id } from "../../../convex/_generated/dataModel";
 
 export function ForkMergeModal({
   projectId,
@@ -8,7 +9,7 @@ export function ForkMergeModal({
   onClose,
 }: {
   projectId: string;
-  fileId: string;
+  fileId: Id<"files">;
   onClose: () => void;
 }) {
   return (

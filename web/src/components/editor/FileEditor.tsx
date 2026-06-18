@@ -2,7 +2,7 @@
 
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 import { CollabPanel } from "../collab/CollabPanel";
@@ -16,18 +16,14 @@ export function FileEditor({
   fileId,
 }: {
   projectId: string;
-  fileId: string;
+  fileId: Id<"files">;
 }) {
-  const data = useQuery(api.queries.getFileWithContent, {
-    fileId: fileId as Id<"files">,
-  });
+  const data = useQuery(api.queries.getFileWithContent, { fileId });
   const insertVersion = useMutation(api.versions.insert);
   const [draft, setDraft] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [showForkModal, setShowForkModal] = useState(false);
-  const forkedBeforeSaveRef = useRef(false);
-  const awaitingForkCheckRef = useRef(false);
 
   const serverContent = data?.content ?? "";
   const dirty = draft !== null;
@@ -57,38 +53,21 @@ export function FileEditor({
       checkpointNow();
       return;
     }
-    forkedBeforeSaveRef.current = Boolean(data?.file?.forked);
-    awaitingForkCheckRef.current = true;
     setSaving(true);
     setSaveError(null);
     try {
-      await insertVersion({
-        fileId: fileId as Id<"files">,
+      const { forked } = await insertVersion({
+        fileId,
         content: encodeTextContent(buffer),
       });
       setDraft(null);
+      if (forked) setShowForkModal(true);
     } catch (err) {
       setSaveError(getErrorMessage(err, "Save failed"));
     } finally {
       setSaving(false);
     }
-  }, [
-    buffer,
-    checkpointNow,
-    data?.file?.forked,
-    fileId,
-    inCollab,
-    insertVersion,
-  ]);
-
-  useEffect(() => {
-    if (!awaitingForkCheckRef.current) return;
-    if (data === undefined || data === null) return;
-    awaitingForkCheckRef.current = false;
-    if (data.file?.forked && !forkedBeforeSaveRef.current) {
-      setShowForkModal(true);
-    }
-  }, [data]);
+  }, [buffer, checkpointNow, fileId, inCollab, insertVersion]);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {

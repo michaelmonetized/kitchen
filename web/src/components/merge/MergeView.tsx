@@ -147,7 +147,7 @@ export function MergeView({
   fileId,
 }: {
   projectId: string;
-  fileId: string;
+  fileId: Id<"files">;
 }) {
   const [leftVersionId, setLeftVersionId] = useState<string | undefined>();
   const [rightVersionId, setRightVersionId] = useState<string | undefined>();
@@ -157,7 +157,7 @@ export function MergeView({
   const router = useRouter();
 
   const context = useQuery(api.queries.getForkMergeContext, {
-    fileId: fileId as Id<"files">,
+    fileId,
     leftVersionId: leftVersionId
       ? (leftVersionId as Id<"versions">)
       : undefined,
@@ -178,12 +178,9 @@ export function MergeView({
     setError(null);
     try {
       await insertMerge({
-        fileId: fileId as Id<"files">,
+        fileId,
         content: encodeTextContent(preview),
-        parentVersionIds: [
-          left._id as Id<"versions">,
-          right._id as Id<"versions">,
-        ],
+        parentVersionIds: [left._id, right._id],
       });
       router.push(`/app/projects/${projectId}/files/${fileId}`);
     } catch (e) {

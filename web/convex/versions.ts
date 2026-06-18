@@ -46,20 +46,22 @@ export const insert = mutation({
     headIds.add(versionId);
     const activeHeads = [...headIds];
 
-    if (activeHeads.length === 1) {
+    const forked = activeHeads.length > 1;
+
+    if (forked) {
+      await ctx.db.patch(args.fileId, {
+        forked: true,
+        updatedAt: Date.now(),
+      });
+    } else {
       await ctx.db.patch(args.fileId, {
         currentVersionId: versionId,
         forked: false,
         updatedAt: Date.now(),
       });
-    } else {
-      await ctx.db.patch(args.fileId, {
-        forked: true,
-        updatedAt: Date.now(),
-      });
     }
 
-    return versionId;
+    return { forked };
   },
 });
 

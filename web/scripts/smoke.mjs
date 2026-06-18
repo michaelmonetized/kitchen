@@ -136,11 +136,11 @@ async function runConvexFlow() {
   const content = new TextEncoder().encode(
     `kitchen smoke ${new Date().toISOString()}\n`,
   );
-  const versionId = await client.mutation(api.versions.insert, {
+  const { forked } = await client.mutation(api.versions.insert, {
     fileId,
     content: content.buffer,
   });
-  pass(`versions.insert (${versionId})`);
+  pass(`versions.insert (forked=${forked})`);
 }
 
 console.log(`Smoke test → ${baseUrl}\n`);
