@@ -1,25 +1,8 @@
-import type { Id } from "./_generated/dataModel";
-import type { MutationCtx } from "./_generated/server";
 import { mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { assertCanWrite } from "./lib/authz";
 import { requireUser } from "./lib/session";
-
-async function getVersionHeads(ctx: MutationCtx, fileId: Id<"files">) {
-  const versions = await ctx.db
-    .query("versions")
-    .withIndex("by_file", (q) => q.eq("fileId", fileId))
-    .collect();
-
-  const referenced = new Set<string>();
-  for (const ver of versions) {
-    for (const parent of ver.parentVersionIds ?? []) {
-      referenced.add(parent);
-    }
-  }
-
-  return versions.filter((ver) => !referenced.has(ver._id));
-}
+import { getVersionHeads } from "./lib/versionHeads";
 
 export const insert = mutation({
   args: {

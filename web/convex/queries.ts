@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { canRead } from "./lib/authz";
 import { requireUser } from "./lib/session";
+import { getVersionHeads } from "./lib/versionHeads";
 
 export const projectsForUser = query({
   args: {},
@@ -142,19 +143,7 @@ export const getForkMergeContext = query({
     if (!file || file.type !== "file") return null;
     if (!(await canRead(ctx, user._id, file._id))) return null;
 
-    const versions = await ctx.db
-      .query("versions")
-      .withIndex("by_file", (q) => q.eq("fileId", args.fileId))
-      .collect();
-
-    const referenced = new Set<string>();
-    for (const ver of versions) {
-      for (const parent of ver.parentVersionIds ?? []) {
-        referenced.add(parent);
-      }
-    }
-
-    const heads = versions.filter((ver) => !referenced.has(ver._id));
+    const heads = await getVersionHeads(ctx, args.fileId);
     const decode = (content: ArrayBuffer) =>
       new TextDecoder().decode(new Uint8Array(content));
 

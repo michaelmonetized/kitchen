@@ -10,7 +10,7 @@
 import { useMutation, useQuery } from "convex/react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 
@@ -53,29 +53,22 @@ function rowBg(kind: MergeRow["kind"]) {
 }
 
 function MergeLinePicker({
-  left,
-  right,
-  onPreviewChange,
+  rows,
+  onRowsChange,
 }: {
-  left: VersionHead;
-  right: VersionHead;
-  onPreviewChange: (value: string) => void;
+  rows: MergeRow[];
+  onRowsChange: (rows: MergeRow[]) => void;
 }) {
-  const [rows, setRows] = useState(() =>
-    buildMergeRows(left.content, right.content),
-  );
-
   const computedPreview = useMemo(() => composeMergedContent(rows), [rows]);
 
-  useEffect(() => {
-    onPreviewChange(computedPreview);
-  }, [computedPreview, onPreviewChange]);
-
-  const setPick = useCallback((rowId: string, pick: PickSide) => {
-    setRows((prev) =>
-      prev.map((row) => (row.id === rowId ? { ...row, pick } : row)),
-    );
-  }, []);
+  const setPick = useCallback(
+    (rowId: string, pick: PickSide) => {
+      onRowsChange(
+        rows.map((row) => (row.id === rowId ? { ...row, pick } : row)),
+      );
+    },
+    [onRowsChange, rows],
+  );
 
   return (
     <>
@@ -151,7 +144,10 @@ export function MergeView({
 }) {
   const [leftVersionId, setLeftVersionId] = useState<string | undefined>();
   const [rightVersionId, setRightVersionId] = useState<string | undefined>();
-  const [preview, setPreview] = useState("");
+  const [mergeRows, setMergeRows] = useState<{
+    key: string;
+    rows: MergeRow[];
+  } | null>(null);
   const [committing, setCommitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
@@ -171,6 +167,29 @@ export function MergeView({
   const left = (context?.left ?? null) as VersionHead | null;
   const right = (context?.right ?? null) as VersionHead | null;
   const heads = (context?.heads ?? []) as VersionHead[];
+
+  const mergeKey =
+    left && right ? `${String(left._id)}-${String(right._id)}` : null;
+
+  if (left && right && mergeKey && mergeRows?.key !== mergeKey) {
+    setMergeRows({
+      key: mergeKey,
+      rows: buildMergeRows(left.content, right.content),
+    });
+  }
+
+  const preview = useMemo(
+    () => (mergeRows ? composeMergedContent(mergeRows.rows) : ""),
+    [mergeRows],
+  );
+
+  const handleRowsChange = useCallback(
+    (rows: MergeRow[]) => {
+      if (!mergeKey) return;
+      setMergeRows({ key: mergeKey, rows });
+    },
+    [mergeKey],
+  );
 
   const commit = useCallback(async () => {
     if (!left || !right) return;
@@ -322,13 +341,8 @@ export function MergeView({
         </section>
       </div>
 
-      {left && right && (
-        <MergeLinePicker
-          key={`${String(left._id)}-${String(right._id)}`}
-          left={left}
-          right={right}
-          onPreviewChange={setPreview}
-        />
+      {left && right && mergeRows?.key === mergeKey && (
+        <MergeLinePicker rows={mergeRows.rows} onRowsChange={handleRowsChange} />
       )}
     </div>
   );
