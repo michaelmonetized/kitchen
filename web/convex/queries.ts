@@ -57,6 +57,47 @@ export const children = query({
   },
 });
 
+export const listProjectTree = query({
+  args: { projectId: v.id("files") },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    if (!(await canRead(ctx, user._id, args.projectId))) return [];
+
+    const project = await ctx.db.get(args.projectId);
+    if (!project || project.type !== "dir") return [];
+
+    const nodes: {
+      _id: Id<"files">;
+      parentId: Id<"files">;
+      name: string;
+      type: "dir" | "file";
+      forked: boolean;
+    }[] = [];
+
+    async function walk(parentId: Id<"files">) {
+      const rows = await ctx.db
+        .query("files")
+        .withIndex("by_parent", (q) => q.eq("parentId", parentId))
+        .collect();
+
+      for (const row of rows) {
+        if (!(await canRead(ctx, user._id, row._id))) continue;
+        nodes.push({
+          _id: row._id,
+          parentId,
+          name: row.name,
+          type: row.type,
+          forked: row.forked,
+        });
+        if (row.type === "dir") await walk(row._id);
+      }
+    }
+
+    await walk(args.projectId);
+    return nodes;
+  },
+});
+
 export const getFile = query({
   args: { fileId: v.id("files") },
   handler: async (ctx, args) => {

@@ -2,37 +2,51 @@
 
 import { useQuery } from "convex/react";
 import Link from "next/link";
-import type { Doc, Id } from "../../../convex/_generated/dataModel";
+import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
+
+type TreeNode = {
+  _id: Id<"files">;
+  parentId: Id<"files">;
+  name: string;
+  type: "dir" | "file";
+  forked: boolean;
+};
+
+function buildChildrenMap(nodes: TreeNode[]) {
+  const map = new Map<Id<"files">, TreeNode[]>();
+  for (const node of nodes) {
+    const siblings = map.get(node.parentId) ?? [];
+    siblings.push(node);
+    map.set(node.parentId, siblings);
+  }
+  return map;
+}
 
 function FileTreeNode({
   projectId,
-  fileId,
-  name,
-  type,
-  forked,
+  node,
+  childrenByParent,
 }: {
   projectId: string;
-  fileId: Id<"files">;
-  name: string;
-  type: string;
-  forked?: boolean;
+  node: TreeNode;
+  childrenByParent: Map<Id<"files">, TreeNode[]>;
 }) {
-  const children = useQuery(api.queries.children, { parentId: fileId });
+  const children = childrenByParent.get(node._id) ?? [];
 
-  if (type === "file") {
+  if (node.type === "file") {
     return (
       <li>
         <div className="flex items-center gap-1">
           <Link
-            href={`/app/projects/${projectId}/files/${fileId}`}
+            href={`/app/projects/${projectId}/files/${node._id}`}
             className="flex flex-1 items-center gap-2 rounded px-2 py-1 text-sm hover:bg-stone-100"
           >
-            <span>{name}</span>
+            <span>{node.name}</span>
           </Link>
-          {forked && (
+          {node.forked && (
             <Link
-              href={`/app/projects/${projectId}/files/${fileId}/merge`}
+              href={`/app/projects/${projectId}/files/${node._id}/merge`}
               className="rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800 hover:bg-amber-200"
             >
               fork
@@ -47,18 +61,16 @@ function FileTreeNode({
     <li>
       <details className="group">
         <summary className="cursor-pointer rounded px-2 py-1 text-sm hover:bg-stone-100">
-          {name}/
+          {node.name}/
         </summary>
-        {children && children.length > 0 && (
+        {children.length > 0 && (
           <ul className="ml-3 border-l border-stone-200 pl-2">
-            {(children as Doc<"files">[]).map((child) => (
+            {children.map((child) => (
               <FileTreeNode
                 key={String(child._id)}
                 projectId={projectId}
-                fileId={child._id}
-                name={String(child.name)}
-                type={String(child.type)}
-                forked={Boolean(child.forked)}
+                node={child}
+                childrenByParent={childrenByParent}
               />
             ))}
           </ul>
@@ -75,22 +87,23 @@ export function FileTree({
   projectId: string;
   rootId: Id<"files">;
 }) {
-  const children = useQuery(api.queries.children, { parentId: rootId });
+  const tree = useQuery(api.queries.listProjectTree, { projectId: rootId });
 
-  if (children === undefined) {
+  if (tree === undefined) {
     return <p className="text-sm text-stone-500">Loading tree…</p>;
   }
 
+  const childrenByParent = buildChildrenMap(tree);
+  const roots = childrenByParent.get(rootId) ?? [];
+
   return (
     <ul className="space-y-0.5">
-      {(children as Doc<"files">[]).map((child) => (
+      {roots.map((child) => (
         <FileTreeNode
           key={String(child._id)}
           projectId={projectId}
-          fileId={child._id}
-          name={String(child.name)}
-          type={String(child.type)}
-          forked={Boolean(child.forked)}
+          node={child}
+          childrenByParent={childrenByParent}
         />
       ))}
     </ul>
