@@ -1,7 +1,7 @@
 "use client";
 
 import { useMutation, useQuery } from "convex/react";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import type { Id } from "../../../convex/_generated/dataModel";
 import { api } from "../../../convex/_generated/api";
 
@@ -19,20 +19,11 @@ function slugify(value: string) {
 
 export function SettingsView() {
   const orgs = useQuery(api.admin.listOrgsForUser, {});
-  const ensurePersonalOrg = useMutation(api.admin.ensurePersonalOrg);
   const [selectedOrgId, setSelectedOrgId] = useState<Id<"files"> | null>(null);
   const [tab, setTab] = useState<Tab>("organization");
-  const [onboardingAttempted, setOnboardingAttempted] = useState(false);
-  const onboardingStarted = useRef(false);
 
-  useEffect(() => {
-    if (orgs === undefined || orgs.length > 0 || onboardingStarted.current) return;
-    onboardingStarted.current = true;
-    void ensurePersonalOrg({}).then(() => setOnboardingAttempted(true));
-  }, [orgs, ensurePersonalOrg]);
-
-  if (orgs === undefined || (orgs.length === 0 && !onboardingAttempted)) {
-    return <p className="text-stone-500">Loading settings…</p>;
+  if (orgs === undefined) {
+    return <p className="text-muted">Loading settings…</p>;
   }
 
   if (orgs.length === 0) {

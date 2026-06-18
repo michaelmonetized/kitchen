@@ -1,12 +1,12 @@
-import { AppSidebar } from "@/components/shell/AppSidebar";
+import { OnboardingGate } from "@/components/app/OnboardingGate";
+import { AppChrome } from "@/components/shell/AppChrome";
 
 export const dynamic = "force-dynamic";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen">
-      <AppSidebar />
-      <div className="flex flex-1 flex-col">{children}</div>
-    </div>
+    <OnboardingGate>
+      <AppChrome>{children}</AppChrome>
+    </OnboardingGate>
   );
 }

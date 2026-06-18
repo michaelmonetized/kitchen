@@ -13,7 +13,7 @@ export default function SignUpPage() {
 
   return (
     <main className="flex flex-1 items-center justify-center py-16">
-      <SignUp fallbackRedirectUrl="/app" signInUrl="/sign-in" />
+      <SignUp fallbackRedirectUrl="/app/onboarding" signInUrl="/sign-in" />
     </main>
   );
 }

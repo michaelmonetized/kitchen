@@ -9,14 +9,14 @@ Ship a marketable first impression: clear value prop for the novel model (storag
 
 ## Done criteria
 
-- [ ] `/` (marketing) explains four layers + three modes with diagrams
-- [ ] Hero CTA → `/sign-up`; secondary → docs link
-- [ ] Feature sections: live sync, human merge, editor-agnostic pair
-- [ ] "No git" positioning without attacking git unfairly
-- [ ] Responsive mobile layout
-- [ ] Meta tags, OG image, favicon, product name (Kitchen codename OK with disclaimer)
-- [ ] Authenticated app feels cohesive with marketing (shared design tokens)
-- [ ] First-run onboarding after sign-up (create org or join)
+- [x] `/` (marketing) explains four layers + three modes with diagrams
+- [x] Hero CTA → `/sign-up`; secondary → docs link
+- [x] Feature sections: live sync, human merge, editor-agnostic pair
+- [x] "No git" positioning without attacking git unfairly
+- [x] Responsive mobile layout
+- [x] Meta tags, OG image, favicon, product name (Kitchen codename OK with disclaimer)
+- [x] Authenticated app feels cohesive with marketing (shared design tokens)
+- [x] First-run onboarding after sign-up (create org or join)
 
 ## Steps
 
