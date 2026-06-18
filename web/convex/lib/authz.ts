@@ -30,7 +30,12 @@ export async function getOrgId(ctx: Ctx, fileId: Id<"files">): Promise<Id<"files
   return org._id;
 }
 
-async function userRoleNames(ctx: Ctx, userId: Id<"users">, orgId: Id<"files">) {
+async function userRoleNames(
+  ctx: Ctx,
+  userId: Id<"users">,
+  orgId: Id<"files">,
+  projectFileId?: Id<"files">,
+) {
   const assignments = await ctx.db
     .query("user_roles")
     .withIndex("by_user", (q) => q.eq("userId", userId))
@@ -40,7 +45,13 @@ async function userRoleNames(ctx: Ctx, userId: Id<"users">, orgId: Id<"files">) 
   for (const assignment of assignments) {
     const role = await ctx.db.get(assignment.roleId);
     if (!role || role.orgFileId !== orgId) continue;
-    names.add(role.name);
+    if (assignment.projectFileId === undefined) {
+      names.add(role.name);
+      continue;
+    }
+    if (projectFileId !== undefined && assignment.projectFileId === projectFileId) {
+      names.add(role.name);
+    }
   }
   return names;
 }
@@ -60,6 +71,13 @@ function hasGrant(
   return false;
 }
 
+function projectRootId(chain: Doc<"files">[]): Id<"files"> | undefined {
+  const org = chain.find((f) => f.parentId === undefined);
+  if (!org) return undefined;
+  if (chain.length === 1) return undefined;
+  return chain[chain.length - 2]?._id;
+}
+
 export async function canRead(
   ctx: Ctx,
   userId: Id<"users">,
@@ -68,8 +86,9 @@ export async function canRead(
   const chain = await getAncestorChain(ctx, fileId);
   if (chain.length === 0) return false;
   const orgId = chain.find((f) => f.parentId === undefined)!._id;
+  if (await hasAdmin(ctx, userId, orgId)) return true;
   const props = mergeProperties(chain);
-  const roles = await userRoleNames(ctx, userId, orgId);
+  const roles = await userRoleNames(ctx, userId, orgId, projectRootId(chain));
   return hasGrant(props, roles, "read");
 }
 
@@ -81,8 +100,9 @@ export async function canWrite(
   const chain = await getAncestorChain(ctx, fileId);
   if (chain.length === 0) return false;
   const orgId = chain.find((f) => f.parentId === undefined)!._id;
+  if (await hasAdmin(ctx, userId, orgId)) return true;
   const props = mergeProperties(chain);
-  const roles = await userRoleNames(ctx, userId, orgId);
+  const roles = await userRoleNames(ctx, userId, orgId, projectRootId(chain));
   return hasGrant(props, roles, "write");
 }
 

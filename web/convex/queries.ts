@@ -1,5 +1,6 @@
 import { query } from "./_generated/server";
 import { v } from "convex/values";
+import type { Id } from "./_generated/dataModel";
 import { canRead } from "./lib/authz";
 import { requireUser } from "./lib/session";
 
@@ -7,14 +8,22 @@ export const projectsForUser = query({
   args: {},
   handler: async (ctx) => {
     const user = await requireUser(ctx);
-    const orgs = await ctx.db
-      .query("files")
-      .filter((q) => q.eq(q.field("parentId"), undefined))
+    const assignments = await ctx.db
+      .query("user_roles")
+      .withIndex("by_user", (q) => q.eq("userId", user._id))
       .collect();
 
+    const orgIds = new Set<Id<"files">>();
+    for (const assignment of assignments) {
+      const role = await ctx.db.get(assignment.roleId);
+      if (role) orgIds.add(role.orgFileId);
+    }
+
     const projects = [];
-    for (const org of orgs) {
-      if (!(await canRead(ctx, user._id, org._id))) continue;
+    for (const orgId of orgIds) {
+      const org = await ctx.db.get(orgId);
+      if (!org) continue;
+
       const children = await ctx.db
         .query("files")
         .withIndex("by_parent", (q) => q.eq("parentId", org._id))

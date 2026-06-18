@@ -53,3 +53,54 @@ export const assignUser = mutation({
     });
   },
 });
+
+export const update = mutation({
+  args: {
+    roleId: v.id("roles"),
+    name: v.optional(v.string()),
+    permissions: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const role = await ctx.db.get(args.roleId);
+    if (!role) throw new Error("ROLE_NOT_FOUND");
+
+    if (!(await hasAdmin(ctx, user._id, role.orgFileId))) {
+      throw new Error("FORBIDDEN");
+    }
+
+    const patch: { name?: string; permissions?: string[] } = {};
+    if (args.name !== undefined) patch.name = args.name;
+    if (args.permissions !== undefined) patch.permissions = args.permissions;
+
+    if (Object.keys(patch).length > 0) {
+      await ctx.db.patch(args.roleId, patch);
+    }
+
+    return args.roleId;
+  },
+});
+
+export const remove = mutation({
+  args: { roleId: v.id("roles") },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const role = await ctx.db.get(args.roleId);
+    if (!role) throw new Error("ROLE_NOT_FOUND");
+
+    if (!(await hasAdmin(ctx, user._id, role.orgFileId))) {
+      throw new Error("FORBIDDEN");
+    }
+
+    const assignments = await ctx.db
+      .query("user_roles")
+      .withIndex("by_role", (q) => q.eq("roleId", args.roleId))
+      .collect();
+
+    for (const assignment of assignments) {
+      await ctx.db.delete(assignment._id);
+    }
+
+    await ctx.db.delete(args.roleId);
+  },
+});

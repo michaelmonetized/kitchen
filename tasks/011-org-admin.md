@@ -9,14 +9,14 @@ Org admins create orgs and projects, define roles, assign members. New teammate 
 
 ## Done criteria
 
-- [ ] `/app/settings` — org list for admin users
-- [ ] Create org → `files.insert(type: dir, parentId: null)` with `org:<slug>` property
-- [ ] Create project under org → `files.insert(type: dir, parentId: orgId)`
-- [ ] Role CRUD: `roles.insert` with permissions array
-- [ ] Invite flow: assign `user_roles` by email (upsert user stub or invite via Clerk)
-- [ ] Set file properties `role:editor: write` on project root (JSON `{"role:editor":"write"}`)
-- [ ] Transfer ownership UI (properties + role changes)
-- [ ] Non-admin users see read-only settings or 403
+- [x] `/app/settings` — org list for admin users
+- [x] Create org → `files.insert(type: dir, parentId: null)` with `org:<slug>` property
+- [x] Create project under org → `files.insert(type: dir, parentId: orgId)`
+- [x] Role CRUD: `roles.insert` with permissions array
+- [x] Invite flow: assign `user_roles` by email (upsert user stub or invite via Clerk)
+- [x] Set file properties `role:editor: write` on project root (JSON `{"role:editor":"write"}`)
+- [x] Transfer ownership UI (properties + role changes)
+- [x] Non-admin users see read-only settings or 403
 
 ## Steps
 
