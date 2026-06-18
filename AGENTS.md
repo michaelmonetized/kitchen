@@ -21,7 +21,7 @@ Instructions for autonomous agents (`gx`, `./loop.sh`, Cursor, Grok).
 1. Files are rows — orgs/projects are `dir` files
 2. Versions are insert-only — no upsert on content
 3. Mirror is a view — web talks to Sync Store directly
-4. Sync is live — Convex reactivity for v0
+4. Sync is live — Convex reactivity in `./web`; Lakebed `useQuery`/`useMutation` for capsule spikes
 5. Merge is human — Pierre / line-pick UI
 6. Collab → checkpoint — no `collab_sessions` table
 
@@ -45,16 +45,37 @@ grok --always-approve --effort max -m grok-composer-2.5-fast \
 
 Mark every `- [ ]` under **Done criteria** as `- [x]` in the task file. Run **Verify** commands before checking boxes.
 
-## Stack
+## Stack (current — `./web`)
 
-- Next.js 15+ App Router, TypeScript, Tailwind
-- Convex (Sync Store)
+- Next.js 16 App Router, TypeScript, Tailwind
+- Convex (Sync Store reference impl)
 - Clerk (auth)
-- Monaco (editor)
+- Textarea editor (Monaco planned)
+
+## Faster alternative: Lakebed
+
+For **new greenfield spikes**, prefer [`npx lakebed`](https://docs.lakebed.dev/) when the goal is auth + live DB + WebSocket mutations without manual wiring:
+
+```bash
+npx lakebed new kitchen-spike --template todo
+cd kitchen-spike && npx lakebed dev          # guest auth + useQuery/useMutation
+npx lakebed auth as alice                    # dev identity
+npx lakebed db list --port 3000              # inspect tables
+npx lakebed deploy                           # ship capsule
+```
+
+Lakebed ships `ctx.auth`, typed `ctx.db`, and client hooks out of the box — maps directly to Kitchen's live sync invariant. Capsules are Preact + `server/index.ts`, not Next.js. Tasks 001–014 target `./web` (Convex path); do not rip out `./web` unless explicitly replanning.
+
+See [learning-records/0002-lakebed-alternative.md](./learning-records/0002-lakebed-alternative.md).
 
 ## Environment (use authorized CLIs)
 
-Local zsh has Convex, Clerk, Vercel, and Sentry CLIs already authenticated. **Do not use placeholder keys** when CLIs are available.
+Local zsh has **Lakebed**, Convex, Clerk, Vercel, and Sentry CLIs. **Do not use placeholder keys** when CLIs are available.
+
+```bash
+npx lakebed auth login              # if deploying capsules
+npx lakebed auth status
+```
 
 ```bash
 bash scripts/setup-env.sh          # pull Clerk + Convex + Vercel env

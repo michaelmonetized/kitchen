@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "npm install && npm run build -w @kitchen/collab-protocol && npm run build -w @kitchen/collab-relay",
+  "buildCommand": "npm run build -w web",
+  "outputDirectory": "web/.next",
+  "framework": "nextjs"
+}

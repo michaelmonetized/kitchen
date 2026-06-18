@@ -38,9 +38,20 @@ npm run loop:status          # inspect task progress
 
 Tasks: [tasks/README.md](./tasks/README.md). Agent guide: [AGENTS.md](./AGENTS.md).
 
+## Try it
+
+**[kitchen-gilt-nine.vercel.app](https://kitchen-gilt-nine.vercel.app)** — web beta (Clerk dev instance, Convex production).
+
+Sign up, create a project, edit a file, and watch live sync across tabs. Demo video: *coming soon*.
+
+```bash
+cd web && npm run ship          # Convex prod + Vercel prod + smoke
+SMOKE_BASE_URL=https://kitchen-gilt-nine.vercel.app node web/scripts/smoke.mjs
+```
+
 ## Status
 
-**Design phase + collab spike.** Web build tasks defined; run `./loop.sh` to implement. Minimal proof in `packages/`:
+**Web beta shipped.** Tasks 001–014 complete in `./web` (Next.js + Convex + Clerk). Collab proof in `packages/`:
 
 ```bash
 npm install

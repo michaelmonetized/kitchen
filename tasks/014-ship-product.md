@@ -9,14 +9,14 @@ Deploy `./web` to Vercel with Convex production deployment. Smoke tests pass. A 
 
 ## Done criteria
 
-- [ ] Vercel project linked to `web/`; production deploy succeeds
-- [ ] Convex production deployment configured; env vars set in Vercel
-- [ ] Clerk production instance wired (or dev keys documented for beta)
-- [ ] `web/package.json` has `ship` or `deploy` script
-- [ ] `web/scripts/smoke.mjs` — automated smoke test (Playwright or fetch-based) covering sign-in → create project → save file
-- [ ] `AGENTS.md` at repo root — loop + gx + task conventions for future agents
-- [ ] `node scripts/task-loop.mjs verify` passes
-- [ ] README updated with "Try it" URL and demo video placeholder
+- [x] Vercel project linked to `web/`; production deploy succeeds
+- [x] Convex production deployment configured; env vars set in Vercel
+- [x] Clerk production instance wired (or dev keys documented for beta)
+- [x] `web/package.json` has `ship` or `deploy` script
+- [x] `web/scripts/smoke.mjs` — automated smoke test (Playwright or fetch-based) covering sign-in → create project → save file
+- [x] `AGENTS.md` at repo root — loop + gx + task conventions for future agents
+- [x] `node scripts/task-loop.mjs verify` passes
+- [x] README updated with "Try it" URL and demo video placeholder
 
 ## Steps
 

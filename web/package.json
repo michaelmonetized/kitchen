@@ -9,7 +9,9 @@
     "relay": "tsx server/collab-relay.ts",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "smoke": "node scripts/smoke.mjs",
+    "ship": "node scripts/ship.mjs"
   },
   "dependencies": {
     "@clerk/nextjs": "^6.36.0",
