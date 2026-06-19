@@ -128,6 +128,18 @@ The daemon keeps a `fileId ↔ mirror path` map per project:
 
 Tree queries (`children`, `listProjectTree`) and mirror subscriptions skip `deleted === "true"`.
 
+## Offline save queue (Notion-on-phone)
+
+When the Convex WebSocket drops, local editor saves still land on disk. The daemon queues `versions.insert` payloads at `~/.kitchen/queue/` (durable across restart) and flushes FIFO on reconnect. Tray/status labels (`Synced` / `Offline (N queued)` / `Syncing…`) are written to `~/.kitchen/status.json`.
+
+If the cloud head moved while offline, flush returns `forked: true` — Fork policy A keeps author bytes on disk; merge in web.
+
+```bash
+npm run verify:offline-queue -w @kitchen/mirror-client
+```
+
+See [ADR 0006](../../docs/adr/0006-offline-save-until-reconnect.md).
+
 ## Scripts
 
 | Command | Description |
@@ -136,6 +148,7 @@ Tree queries (`children`, `listProjectTree`) and mirror subscriptions skip `dele
 | `npm run start -w @kitchen/mirror-client` | Run built daemon |
 | `npm run login -w @kitchen/mirror-client` | Browser OAuth login |
 | `npm run build -w @kitchen/mirror-client` | TypeScript compile |
+| `npm run verify:offline-queue -w @kitchen/mirror-client` | Offline queue smoke |
 
 ## Echo suppression
 

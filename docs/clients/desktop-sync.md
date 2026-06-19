@@ -169,15 +169,15 @@ No clone step. No remote URL.
 
 ## Offline (Notion-on-phone)
 
-When connectivity drops:
+When connectivity drops ([ADR 0006](../adr/0006-offline-save-until-reconnect.md)):
 
 1. **Disk** — editor saves proceed; mirror path holds latest local bytes
-2. **Queue** — daemon appends version inserts to a durable local queue (`~/.kitchen/…`)
-3. **UI** — tray shows offline + queued count
-4. **Reconnect** — flush queue FIFO → Convex `versions.insert`
-5. **Conflict** — if cloud head moved while offline → `forked: true` → Fork policy A + web merge
+2. **Queue** — FS watcher → durable insert queue at `~/.kitchen/queue/` (path, content hash, timestamp per entry; survives daemon restart)
+3. **UI** — tray/status: `Synced` / `Offline (N queued)` / `Syncing…` (written to `~/.kitchen/status.json` and process title)
+4. **Reconnect** — flush queue FIFO → Convex `versions.insert` per entry
+5. **Conflict** — if cloud head moved while offline → `forked: true` → Fork policy A (author bytes on disk) + web merge
 
-Tree metadata moves (`mv`, `rm`) while offline may be deferred or content-only in v0 — see task 020.
+Tree metadata moves (`mv`, `rm`) while offline are **content-only in v0** — queued inserts cover file bytes, not `files.updateMetadata`.
 
 ## Failure modes
 

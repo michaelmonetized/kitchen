@@ -3,6 +3,8 @@ import path from "node:path";
 
 export const KITCHEN_DIR = path.join(homedir(), ".kitchen");
 export const AUTH_FILE = path.join(KITCHEN_DIR, "mirror-auth.json");
+export const QUEUE_DIR = path.join(KITCHEN_DIR, "queue");
+export const STATUS_FILE = path.join(KITCHEN_DIR, "status.json");
 
 export function defaultMirrorRoot(): string {
   return path.join(homedir(), "Projects");

@@ -10,13 +10,13 @@ When WebSocket to Convex drops, the mirror **does not block** local editor saves
 
 ## Done criteria
 
-- [ ] Durable local insert queue (survives daemon restart) under `~/.kitchen/queue/` or equivalent
-- [ ] Offline: FS watcher → queue entry (path, bytes hash, timestamp); disk write proceeds
-- [ ] Reconnect: flush queue in FIFO order → `versions.insert` per entry
-- [ ] Post-flush: if `forked`, apply Fork policy A (author bytes on disk; notify merge)
-- [ ] Tray state: `Synced` / `Offline (N queued)` / `Syncing…`
-- [ ] `docs/clients/desktop-sync.md` + FAQ offline section aligned with ADR 0006
-- [ ] Manual verify: disconnect network → edit file → reconnect → version in Convex; optional fork if remote also edited
+- [x] Durable local insert queue (survives daemon restart) under `~/.kitchen/queue/` or equivalent
+- [x] Offline: FS watcher → queue entry (path, bytes hash, timestamp); disk write proceeds
+- [x] Reconnect: flush queue in FIFO order → `versions.insert` per entry
+- [x] Post-flush: if `forked`, apply Fork policy A (author bytes on disk; notify merge)
+- [x] Tray state: `Synced` / `Offline (N queued)` / `Syncing…`
+- [x] `docs/clients/desktop-sync.md` + FAQ offline section aligned with ADR 0006
+- [x] Manual verify: disconnect network → edit file → reconnect → version in Convex; optional fork if remote also edited
 
 ## Out of scope
 

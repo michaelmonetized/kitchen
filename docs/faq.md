@@ -58,7 +58,7 @@ Same as text: Version `content` bytes + File `mime`. No separate blob service in
 
 ### What happens offline?
 
-Same as Notion on your phone: keep editing locally; the mirror queues version inserts and flushes on reconnect. If the cloud moved while you were offline, you get a fork and merge in web. Implementation is [task 020](../tasks/020-offline-save-queue.md); until that ships, treat offline as best-effort. See [Desktop Sync](./clients/desktop-sync.md) and [ADR 0006](./adr/0006-offline-save-until-reconnect.md).
+Same as Notion on your phone: keep editing locally; the mirror daemon queues version inserts in `~/.kitchen/queue/` and flushes FIFO on reconnect. Tray/status shows `Synced`, `Offline (N queued)`, or `Syncing…` via `~/.kitchen/status.json`. If the cloud moved while you were offline, you get a fork and merge in web (Fork policy A keeps your bytes on disk). See [Desktop Sync](./clients/desktop-sync.md) and [ADR 0006](./adr/0006-offline-save-until-reconnect.md).
 
 ### How big can a file be?
 

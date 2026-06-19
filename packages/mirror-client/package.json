@@ -14,7 +14,8 @@
     "start": "node dist/index.js start",
     "login": "tsx src/index.ts login",
     "smoke": "node scripts/roundtrip-smoke.mjs",
-    "verify:agent-discovery": "node scripts/agent-discovery-verify.mjs"
+    "verify:agent-discovery": "node scripts/agent-discovery-verify.mjs",
+    "verify:offline-queue": "node scripts/offline-queue-verify.mjs"
   },
   "dependencies": {
     "@clerk/backend": "^2.6.0",

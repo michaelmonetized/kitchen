@@ -7,6 +7,7 @@ import { api } from "./convex-api.js";
 import type { Id } from "./types.js";
 import { EchoSuppressor } from "./echo-suppressor.js";
 import { normalizeAbsolutePath } from "./normalize-path.js";
+import type { InsertQueue } from "./insert-queue.js";
 import { notifyFork } from "./notify.js";
 import {
   buildRelativePath,
@@ -15,6 +16,7 @@ import {
   type ProjectInfo,
   type TreeNode,
 } from "./paths.js";
+import { isOfflineError } from "./queue-flush.js";
 
 const DEBOUNCE_MS = 300;
 const RENAME_WINDOW_MS = 1000;
@@ -34,6 +36,9 @@ export type DiskToCloudOptions = {
   getCurrentVersionId?: (fileId: Id<"files">) => Id<"versions"> | undefined;
   onVersionInserted?: (fileId: Id<"files">, versionId: Id<"versions">) => void;
   onCloudHash?: (fileId: Id<"files">, hash: string) => void;
+  queue?: InsertQueue;
+  getIsOnline?: () => boolean;
+  onQueued?: (queuedCount: number) => void;
 };
 
 export class DiskToCloudEngine {
@@ -56,6 +61,9 @@ export class DiskToCloudEngine {
     versionId: Id<"versions">,
   ) => void;
   private readonly onCloudHash?: (fileId: Id<"files">, hash: string) => void;
+  private readonly queue?: InsertQueue;
+  private readonly getIsOnline?: () => boolean;
+  private readonly onQueued?: (queuedCount: number) => void;
 
   private readonly subscriptions = new Map<
     string,
@@ -84,6 +92,9 @@ export class DiskToCloudEngine {
     this.getCurrentVersionId = options.getCurrentVersionId;
     this.onVersionInserted = options.onVersionInserted;
     this.onCloudHash = options.onCloudHash;
+    this.queue = options.queue;
+    this.getIsOnline = options.getIsOnline;
+    this.onQueued = options.onQueued;
   }
 
   async start(): Promise<void> {
@@ -366,10 +377,24 @@ export class DiskToCloudEngine {
     try {
       const content = Uint8Array.from(bytes).buffer;
       let parentVersionId = this.getCurrentVersionId?.(fileId);
-      if (!parentVersionId) {
+      if (!parentVersionId && this.getIsOnline?.()) {
         const file = await this.client.query(api.queries.getFile, { fileId });
         parentVersionId = file?.currentVersionId;
       }
+
+      if (!this.getIsOnline?.()) {
+        await this.enqueueOffline({
+          absolutePath,
+          fileId,
+          hash,
+          bytes,
+          parentVersionId,
+          projectId: parsed.project.projectId,
+          fileName: path.basename(absolutePath),
+        });
+        return;
+      }
+
       const result = await this.client.mutation(api.versions.insert, {
         fileId,
         content,
@@ -399,10 +424,55 @@ export class DiskToCloudEngine {
         console.log(`disk→cloud ${absolutePath}`);
       }
     } catch (err) {
+      if (this.queue && isOfflineError(err)) {
+        const bytes = await readFile(absolutePath).catch(() => null);
+        if (bytes) {
+          const hash = sha256(bytes);
+          let parentVersionId = this.getCurrentVersionId?.(fileId);
+          await this.enqueueOffline({
+            absolutePath,
+            fileId,
+            hash,
+            bytes,
+            parentVersionId,
+            projectId: parsed.project.projectId,
+            fileName: path.basename(absolutePath),
+          });
+          return;
+        }
+      }
       console.error(`disk→cloud failed ${absolutePath}:`, err);
     } finally {
       this.inflight.delete(fileId);
     }
+  }
+
+  private async enqueueOffline(options: {
+    absolutePath: string;
+    fileId: Id<"files">;
+    hash: string;
+    bytes: Buffer;
+    parentVersionId?: Id<"versions">;
+    projectId: Id<"files">;
+    fileName: string;
+  }): Promise<void> {
+    if (!this.queue) {
+      console.error(`disk→cloud offline but no queue: ${options.absolutePath}`);
+      return;
+    }
+    await this.queue.enqueue({
+      absolutePath: options.absolutePath,
+      fileId: options.fileId,
+      hash: options.hash,
+      contentBase64: options.bytes.toString("base64"),
+      parentVersionId: options.parentVersionId,
+      projectId: options.projectId,
+      fileName: options.fileName,
+    });
+    this.localHash.set(options.fileId, options.hash);
+    const queued = await this.queue.count();
+    this.onQueued?.(queued);
+    console.log(`disk→cloud queued (offline) ${options.absolutePath}`);
   }
 }
 
