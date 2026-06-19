@@ -49,11 +49,35 @@ Each authorized project becomes a top-level directory:
 ```
 $HOME/Projects/
 ├── acme-corp-my-app/
+│   ├── .kitchen/
+│   │   ├── convex.json          # deployment URL pointer (create-if-missing)
+│   │   └── docs/
+│   │       └── AGENTS.md        # agent discovery kit (create-if-missing)
 │   └── src/
 │       └── index.ts
 ```
 
 Slugs are `{orgSlug}-{projectSlug}` to avoid collisions across orgs.
+
+## Agent discovery kit (`.kitchen/docs`)
+
+On first project materialization, the daemon writes **create-if-missing** files so external harnesses discover Kitchen without product AI:
+
+| Path | Purpose |
+|------|---------|
+| `.kitchen/docs/AGENTS.md` | 30-second model: no git, insert-only `versions`, `npx kitchen changes`, `npx kitchen auth` → `~/.kitchen/auth.json`, `role:public`, offline queue |
+| `.kitchen/convex.json` | `{ "deploymentUrl": "<NEXT_PUBLIC_CONVEX_URL>" }` for `npx convex` |
+
+Templates live in `packages/mirror-client/templates/`. User edits to `AGENTS.md` are **never overwritten** on later syncs.
+
+Verify after a mirror sync:
+
+```bash
+ls $HOME/Projects/<project>/.kitchen/docs/AGENTS.md
+npm run verify:agent-discovery -w @kitchen/mirror-client
+```
+
+See [`docs/clients/agent-discovery.md`](../../docs/clients/agent-discovery.md).
 
 ## Dev workflow
 

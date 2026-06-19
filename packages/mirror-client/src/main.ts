@@ -3,6 +3,7 @@ import { ConvexClient } from "convex/browser";
 import { api } from "./convex-api.js";
 import type { Id } from "./types.js";
 import { loadAuth, refreshConvexJwt, runLoginFlow } from "./auth.js";
+import { ensureAgentDiscoveryKit } from "./agent-discovery.js";
 import { CloudToDiskEngine } from "./cloud-to-disk.js";
 import { resolveConvexUrl, resolveMirrorRoot } from "./config.js";
 import { DiskToCloudEngine } from "./disk-to-cloud.js";
@@ -68,6 +69,7 @@ export async function runMirror(): Promise<void> {
       disk.noteCloudHash(fileId, hash);
     },
     onProjectDir: (absoluteDir) => {
+      void ensureAgentDiscoveryKit(absoluteDir, convexUrl);
       void disk.watchDirectory(absoluteDir);
     },
   });
