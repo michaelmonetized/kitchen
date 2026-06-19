@@ -21,6 +21,7 @@ Properties are a **string → string** map on each File row.
 | `org:<slug>` | comma-separated emails | Membership display hint — not the auth boundary |
 | `role:<name>` | `"read"` | Users with role `<name>` may read |
 | `role:<name>` | `"write"` | Users with role `<name>` may insert versions |
+| `deleted` | `"true"` | Node tombstoned — excluded from tree walks and mirror live tree; row + versions retained |
 
 ## Shorthand notation
 

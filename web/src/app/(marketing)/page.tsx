@@ -16,10 +16,10 @@ const FEATURES = [
     icon: "✋",
   },
   {
-    title: "Editor-agnostic pair",
+    title: "Mirror to any editor",
     description:
-      "Pair in nvim and VS Code simultaneously. Collab agents bridge each mirror to the relay. Voice stays on Discord; Kitchen syncs bytes only.",
-    icon: "🤝",
+      "Projects materialize at $HOME/Projects. Save in VS Code, nvim, or Zed — the mirror client syncs bytes to the cloud. Live pair sessions ship after solo sync (CLI spike in repo).",
+    icon: "💻",
   },
 ] as const;
 
@@ -31,7 +31,7 @@ const COMPARISONS = [
 
 const TESTIMONIALS = [
   {
-    quote: "I saved in Zed and my teammate's VS Code updated before I finished my coffee.",
+    quote: "I saved in Zed and the web app showed the new version before I finished my coffee.",
     author: "Early beta user",
     role: "Full-stack developer",
   },
@@ -56,8 +56,8 @@ export default function MarketingPage() {
           </h1>
           <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-muted">
             Kitchen is a novel stack for storage, sync, work, and collaboration — four layers,
-            one model. Save in your editor; history is automatic. Pair across editors without
-            a browser.
+            one model. Save in your editor via the mirror client; history is automatic. Web
+            beta live now — pair programming UI coming next.
           </p>
           <p className="mt-3 text-xs text-muted">
             Kitchen is a working codename — not the final product name.
@@ -117,7 +117,7 @@ export default function MarketingPage() {
             </h2>
             <p className="mt-4 text-muted leading-relaxed">
               Not one workflow — three, depending on what you are doing. Solo sync, async
-              concurrent edits, or live pair programming.
+              concurrent edits, or live pair programming (UI coming next).
             </p>
           </div>
           <div className="mt-10">

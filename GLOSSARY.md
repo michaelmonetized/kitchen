@@ -4,6 +4,10 @@ Canonical language for the Kitchen project. All documentation adheres to these t
 
 ## Core
 
+**No git** (positioning):
+Kitchen removes the git command loop — `add`, `commit`, `push`, `pull`, `rebase`. Mutations are tracked as insert-only **Version** rows on every save. History and merge remain; the ceremony does not.
+_Avoid_: No version control, no history, git killer
+
 **Kitchen**:
 The codename for a cloud-native project store where files are database rows, versions are append-only, and local filesystem trees are mirrors. Not the final product name.
 _Avoid_: The app, the platform, cloud IDE
@@ -15,6 +19,38 @@ _Avoid_: Database, backend, Convex (unless referring to the reference implementa
 **Mirror**:
 The local filesystem projection of a project at `$HOME/Projects/<project>`, maintained by a desktop client in realtime.
 _Avoid_: Clone, checkout, working copy, sync folder
+
+**Mirror client**:
+TypeScript desktop process (Electron menubar or headless background service) that bidirectionally syncs the Sync Store and `$HOME/Projects`: Convex realtime → disk writes; FS watcher → `versions.insert` and tree diff → `files.updateMetadata`.
+_Avoid_: Sync daemon (prefer **Mirror client**), desktop app (when meaning full IDE)
+
+**Tree move**:
+Relocation of a File row by changing `parentId` and/or `name` via `files.updateMetadata` — not a Version insert. Mirror client diffs Convex tree vs disk to apply `fs.rename` (cloud→disk) or metadata patch (disk→cloud).
+_Avoid_: Move commit, git mv, rename version
+
+**Soft delete**:
+Marking a File row with `properties.deleted = "true"` without removing the row or its Versions. Tree walks skip deleted nodes — no live entry point from project root. Retention is infinite.
+_Avoid_: Hard delete, purge, trash folder (as entity)
+
+**Web client**:
+Browser surface for tree navigation, Pierre diff/blame, version history, rollback, merge, and ACL — not a code editor.
+_Avoid_: Web IDE, cloud editor, textarea editor (as product)
+
+**Version author**:
+The `authorUserId` on a Version row — who inserted that content. Per-line blame in Pierre maps lines to version authors.
+_Avoid_: Commit author, file owner (as blame source)
+
+**Agent discovery kit**:
+`.kitchen/docs/` in each mirrored project — a short pointer so harnesses *emerge* into Kitchen: VCS-shaped tree without `.git` → read docs → `npx kitchen changes` (or Convex CLI). Built from primitives every agent already knows; not a built-in LLM.
+_Avoid_: Kitchen AI, summarize feature, copilot (as product)
+
+**Kitchen CLI**:
+`npx kitchen changes <path> [--since <instant>]` — path-resolved version history using daemon auth. Canonical agent primitive ([ADR 0007](./docs/adr/0007-kitchen-cli-changes.md)).
+_Avoid_: Kitchen MCP, in-app summarize
+
+**Offline queue**:
+Notion-on-phone mirror behavior: local saves while disconnected, durable insert queue, flush on reconnect; remote divergence → fork → merge ([ADR 0006](./docs/adr/0006-offline-save-until-reconnect.md)).
+_Avoid_: Fail-closed offline, auto-merge on reconnect
 
 **Version**:
 An append-only row capturing a file's content at a point in time. Saving never overwrites — it inserts. Concurrent edits produce multiple versions.

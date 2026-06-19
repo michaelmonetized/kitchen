@@ -2,6 +2,8 @@
 
 Sequential tasks for building the **marketable web product** in `./web`. Each file is one agent iteration target for `./loop.sh`.
 
+> **Note:** [`npx lakebed`](https://docs.lakebed.dev/) would have been a faster path for auth + live WS mutations (built-in `useQuery`/`useMutation`, `ctx.auth`, `ctx.db`). Tasks 001–014 intentionally target Next+Convex+Clerk in `./web`. For greenfield spikes, see [learning-records/0002-lakebed-alternative.md](../learning-records/0002-lakebed-alternative.md).
+
 ## Order
 
 | # | Task | Delivers |
@@ -21,6 +23,22 @@ Sequential tasks for building the **marketable web product** in `./web`. Each fi
 | 013 | [landing-marketing](./013-landing-marketing.md) | Landing, onboarding, polish |
 | 014 | [ship-product](./014-ship-product.md) | Vercel deploy, smoke tests, shippable |
 
+### Launch gate (post–014 — grilling blockers)
+
+| # | Task | Grilling hole | Delivers |
+|---|------|---------------|----------|
+| 015 | [mirror-client](./015-mirror-client.md) | *"Your editor sees them on disk"* is false | `packages/mirror-client` — Convex ↔ `$HOME/Projects` |
+| 016 | [launch-gate-verify](./016-launch-gate-verify.md) | No proof + doc/marketing landmines | `mirror-smoke`, FAQ aligned, GTM unlock |
+| 017 | [mirror-grill-gaps](./017-mirror-grill-gaps.md) | Fork A, tree diff, soft delete | ADR 0002–0003 on top of 015 spike |
+| 018 | [web-diff-blame-surface](./018-web-diff-blame-surface.md) | Textarea violates vision | Pierre blame/history/rollback web shell |
+| 019 | [agent-discovery-kit](./019-agent-discovery-kit.md) | No product AI | `.kitchen/docs/AGENTS.md` per project |
+| 020 | [offline-save-queue](./020-offline-save-queue.md) | Plane / lid-close | Notion-style queue + reconnect flush |
+| 021 | [kitchen-cli-changes](./021-kitchen-cli-changes.md) | Agent primitive | `npx kitchen changes path [--since instant]` |
+
+Source: [`docs/gtm/grilling/02-launch-gate.md`](../docs/gtm/grilling/02-launch-gate.md), [`known-landmines.md`](../docs/gtm/grilling/known-landmines.md).
+
+**Loop note:** Tasks 001–014 set `SHIP_COMPLETE`. Re-run `./loop.sh` for 015→016 (clear `.kitchen-loop/SHIP_COMPLETE` or extend loop completion to 016).
+
 ## Ground truth docs
 
 Read before implementing:
@@ -31,7 +49,16 @@ Read before implementing:
 - [docs/clients/web-and-mobile.md](../docs/clients/web-and-mobile.md)
 - [GLOSSARY.md](../GLOSSARY.md)
 
-## Run the loop
+## Code QA loop (refactor)
+
+Product tasks 001–014 are **complete**. Code quality refactors live in [`tasks/qa/`](./qa/README.md) (plans 012–016).
+
+```bash
+./loop-qa.sh
+KITCHEN_LOOP_SERIES=qa node scripts/task-loop.mjs status
+```
+
+## Run the product loop
 
 ```bash
 ./loop.sh

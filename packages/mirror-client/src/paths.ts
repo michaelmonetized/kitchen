@@ -1,5 +1,6 @@
 import path from "node:path";
 import type { Id } from "./types.js";
+import { normalizeAbsolutePath } from "./normalize-path.js";
 import { slugify } from "./slugify.js";
 
 export type TreeNode = {
@@ -52,13 +53,33 @@ export function mirrorPath(
   return path.join(mirrorRoot, projectSlug, relativePath);
 }
 
+/** Resolve parent dir id from a relative directory path under a project root. */
+export function resolveParentId(
+  nodes: TreeNode[],
+  projectId: Id<"files">,
+  relativeDir: string,
+): Id<"files"> | null {
+  if (!relativeDir) return projectId;
+
+  let parentId: Id<"files"> = projectId;
+  for (const segment of relativeDir.split(path.sep)) {
+    if (!segment) continue;
+    const child = nodes.find(
+      (n) => n.parentId === parentId && n.name === segment && n.type === "dir",
+    );
+    if (!child) return null;
+    parentId = child._id;
+  }
+  return parentId;
+}
+
 export function parseMirrorPath(
   mirrorRoot: string,
   absolutePath: string,
   slugToProject: Map<string, ProjectInfo>,
 ): { project: ProjectInfo; relativePath: string } | null {
-  const normalizedRoot = path.resolve(mirrorRoot);
-  const normalized = path.resolve(absolutePath);
+  const normalizedRoot = normalizeAbsolutePath(mirrorRoot);
+  const normalized = normalizeAbsolutePath(absolutePath);
   if (!normalized.startsWith(normalizedRoot + path.sep)) return null;
 
   const remainder = normalized.slice(normalizedRoot.length + 1);

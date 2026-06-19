@@ -1,3 +1,5 @@
+import { normalizeAbsolutePath } from "./normalize-path.js";
+
 const DEFAULT_TTL_MS = 500;
 
 export class EchoSuppressor {
@@ -8,15 +10,17 @@ export class EchoSuppressor {
     this.ttlMs = ttlMs;
   }
 
-  mark(path: string): void {
-    this.suppressed.set(path, Date.now() + this.ttlMs);
+  mark(absolutePath: string): void {
+    const key = normalizeAbsolutePath(absolutePath);
+    this.suppressed.set(key, Date.now() + this.ttlMs);
   }
 
-  isSuppressed(path: string): boolean {
-    const until = this.suppressed.get(path);
+  isSuppressed(absolutePath: string): boolean {
+    const key = normalizeAbsolutePath(absolutePath);
+    const until = this.suppressed.get(key);
     if (!until) return false;
     if (Date.now() >= until) {
-      this.suppressed.delete(path);
+      this.suppressed.delete(key);
       return false;
     }
     return true;

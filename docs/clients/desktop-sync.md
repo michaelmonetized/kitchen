@@ -95,15 +95,53 @@ cloud write → watcher fires → insert version → cloud write → …
 
 Track paths written by the sync engine and ignore watcher events for ~500ms.
 
-## Technology candidates
+## v0 mirror spike (launch gate)
+
+**Accepted** ([ADR 0001](../adr/0001-mirror-client-typescript-convex.md)): TypeScript **Electron menubar app** or **headless background service** — same sync engine.
+
+| Direction | Mechanism |
+|-----------|-----------|
+| **Cloud → disk** | Convex live subscription (default realtime) → write tree + file bytes to `$HOME/Projects/` |
+| **Disk → cloud** | FS watcher (`@parcel/watcher` or equivalent) → debounce → echo suppress → `versions.insert` |
+
+Menubar is optional UI (status, login, project list). A daemon alone clears the launch gate. macOS first; Windows/Linux follow.
+
+Collab agent ships **after** bidirectional solo sync is proven — not part of launch gate.
+
+### Forked content on disk (policy A)
+
+When `file.forked === true`:
+
+- Apply **this user's** `version.insert` bytes to the mirror path
+- **Do not** overwrite mirror with remote users' version inserts until merge
+- Notify: tray/deep link to merge UI
+
+### Tree diff for moves (wide sync)
+
+Moves are **metadata**, not version rows — `files.updateMetadata({ parentId, name })`.
+
+The mirror client maintains a `fileId ↔ mirror path` map and diffs:
+
+| Trigger | Action |
+|---------|--------|
+| WS: `parentId` / `name` change | `fs.rename` / `mkdir` on disk (echo-suppressed) |
+| Local: `mv`, create, delete | Patch Convex tree (`files.insert` / `updateMetadata` / delete policy) |
+
+See [ADR 0002](../adr/0002-mirror-tree-diff-moves.md).
+
+### Soft delete
+
+`rm` or cloud delete sets `properties.deleted = "true"` on the File row. Row and all Versions stay forever. Tree walks and mirror diffs skip deleted nodes — no live path from project root. [ADR 0003](../adr/0003-soft-delete-property.md).
+
+Grill: [`03-mirror-edge-cases.md`](../gtm/grilling/03-mirror-edge-cases.md) E1, E4, E5.
+
+## Technology candidates (later platforms)
 
 | Approach | Pros | Cons |
 |----------|------|------|
-| **Electron** | Cross-platform, TS ecosystem, cited in source | Heavy, battery |
-| **Tauri** | Lighter shell, Rust core | Smaller ecosystem |
+| **Electron / Node daemon** | Cross-platform, TS, shares Convex client | Heavy if full Electron shell |
+| **Tauri** | Lighter shell | Smaller ecosystem |
 | **Native per OS** | Best FS integration | 3x implementation cost |
-
-**Decision status: open.** Electron is the default spike candidate because the source mentions it and all three platforms are mandatory.
 
 ## OS filesystem APIs
 
@@ -129,12 +167,24 @@ Use a battle-tested watcher library (e.g. `@parcel/watcher`) in whichever shell 
 
 No clone step. No remote URL.
 
+## Offline (Notion-on-phone)
+
+When connectivity drops:
+
+1. **Disk** — editor saves proceed; mirror path holds latest local bytes
+2. **Queue** — daemon appends version inserts to a durable local queue (`~/.kitchen/…`)
+3. **UI** — tray shows offline + queued count
+4. **Reconnect** — flush queue FIFO → Convex `versions.insert`
+5. **Conflict** — if cloud head moved while offline → `forked: true` → Fork policy A + web merge
+
+Tree metadata moves (`mv`, `rm`) while offline may be deferred or content-only in v0 — see task 020.
+
 ## Failure modes
 
 | Failure | Behavior |
 |---------|----------|
-| WebSocket disconnect | Reconnect, resubscribe, diff missing versions |
-| Local write while offline | v0: queue or block — TBD |
+| WebSocket disconnect | Queue local inserts; reconnect, resubscribe, flush queue, diff missing versions |
+| Local write while offline | Queue inserts (Notion-on-phone); flush on reconnect; fork → merge if remote moved ([ADR 0006](../adr/0006-offline-save-until-reconnect.md), task 020) |
 | Fork detected | Tray notification + in-app Pierre Merge link |
 | Permission revoked mid-session | Stop writes, grey out mirror paths |
 

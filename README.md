@@ -42,11 +42,18 @@ Tasks: [tasks/README.md](./tasks/README.md). Agent guide: [AGENTS.md](./AGENTS.m
 
 **[kitchen-gilt-nine.vercel.app](https://kitchen-gilt-nine.vercel.app)** — web beta (Clerk dev instance, Convex production).
 
-Sign up, create a project, edit a file, and watch live sync across tabs. Demo video: *coming soon*.
+Sign up, create a project, edit a file, and watch live sync across tabs.
+
+**Mirror client** (local editor sync):
+
+```bash
+npm install && npm run build -w @kitchen/mirror-client && npm run login -w @kitchen/mirror-client && npm run mirror
+```
 
 ```bash
 cd web && npm run ship          # Convex prod + Vercel prod + smoke
 SMOKE_BASE_URL=https://kitchen-gilt-nine.vercel.app node web/scripts/smoke.mjs
+node scripts/mirror-smoke.mjs   # bidirectional mirror proof
 ```
 
 ## Status

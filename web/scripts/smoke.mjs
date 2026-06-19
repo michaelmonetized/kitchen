@@ -7,9 +7,34 @@
  *
  * Requires CLERK_SECRET_KEY and NEXT_PUBLIC_CONVEX_URL for the authenticated flow.
  */
+import { readFileSync, existsSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 import { createClerkClient } from "@clerk/backend";
 import { ConvexHttpClient } from "convex/browser";
 import { api } from "../convex/_generated/api.js";
+
+const webDir = join(dirname(fileURLToPath(import.meta.url)), "..");
+
+function parseEnvFile(path) {
+  if (!existsSync(path)) return {};
+  const vars = {};
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    let value = trimmed.slice(eq + 1);
+    if (
+      (value.startsWith('"') && value.endsWith('"')) ||
+      (value.startsWith("'") && value.endsWith("'"))
+    ) {
+      value = value.slice(1, -1);
+    }
+    vars[trimmed.slice(0, eq)] = value;
+  }
+  return vars;
+}
 
 const baseUrl = (process.env.SMOKE_BASE_URL ?? "http://localhost:3000").replace(
   /\/$/,
@@ -88,21 +113,34 @@ async function getClerkConvexToken() {
   return token.jwt;
 }
 
-async function runConvexFlow() {
-  const convexUrl = process.env.SMOKE_CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
+function resolveConvexUrl() {
+  let convexUrl = process.env.SMOKE_CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
   if (!convexUrl) {
     fail(
       "NEXT_PUBLIC_CONVEX_URL or SMOKE_CONVEX_URL required for authenticated smoke flow",
     );
   }
-  if (baseUrl.startsWith("http") && !baseUrl.includes("localhost")) {
-    const devMarker = "canny-perch-896";
-    if (convexUrl.includes(devMarker)) {
+
+  const isRemote = baseUrl.startsWith("http") && !baseUrl.includes("localhost");
+  const devMarker = "canny-perch-896";
+  if (isRemote && convexUrl.includes(devMarker)) {
+    const vercelProd = parseEnvFile(join(webDir, ".env.vercel.production"));
+    const prodUrl = vercelProd.NEXT_PUBLIC_CONVEX_URL;
+    if (prodUrl && !prodUrl.includes(devMarker)) {
+      convexUrl = prodUrl;
+      pass(`remote smoke → production Convex (${prodUrl})`);
+    } else {
       fail(
-        `remote smoke must not use dev Convex (${devMarker}); set SMOKE_CONVEX_URL to production`,
+        `remote smoke must not use dev Convex (${devMarker}); set SMOKE_CONVEX_URL or pull web/.env.vercel.production`,
       );
     }
   }
+
+  return convexUrl;
+}
+
+async function runConvexFlow() {
+  const convexUrl = resolveConvexUrl();
 
   const jwt = await getClerkConvexToken();
   const client = new ConvexHttpClient(convexUrl);

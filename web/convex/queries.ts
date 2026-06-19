@@ -2,6 +2,7 @@ import { query } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
 import { canRead } from "./lib/authz";
+import { isDeleted } from "./lib/deleted";
 import { requireUser } from "./lib/session";
 import { getVersionHeads } from "./lib/versionHeads";
 
@@ -52,6 +53,7 @@ export const children = query({
 
     const visible = [];
     for (const row of rows) {
+      if (isDeleted(row.properties)) continue;
       if (await canRead(ctx, user._id, row._id)) visible.push(row);
     }
     return visible;
@@ -82,6 +84,7 @@ export const listProjectTree = query({
         .collect();
 
       for (const row of rows) {
+        if (isDeleted(row.properties)) continue;
         if (!(await canRead(ctx, user._id, row._id))) continue;
         nodes.push({
           _id: row._id,

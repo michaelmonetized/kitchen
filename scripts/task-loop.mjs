@@ -1,14 +1,10 @@
 #!/usr/bin/env node
 /**
- * Kitchen task loop helpers (tasks/001-*.md).
+ * Kitchen task loop helpers — supports product (tasks/) and QA (tasks/qa/) series.
  *
  * Usage:
- *   node scripts/task-loop.mjs next            # next incomplete task id or COMPLETE
- *   node scripts/task-loop.mjs prompt          # agent prompt for next task
- *   node scripts/task-loop.mjs complete-check  # COMPLETE or PENDING
- *   node scripts/task-loop.mjs status          # JSON snapshot
- *   node scripts/task-loop.mjs bump            # increment iteration counter
- *   node scripts/task-loop.mjs verify          # build gate (exit 1 on fail)
+ *   node scripts/task-loop.mjs next
+ *   KITCHEN_LOOP_SERIES=qa node scripts/task-loop.mjs status
  */
 import { execSync } from "node:child_process";
 import {
@@ -20,40 +16,43 @@ import {
 } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getLoopConfig, taskFilePattern } from "./task-loop-config.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
-const tasksDir = join(root, "tasks");
-const stateDir = join(root, ".kitchen-loop");
-const statePath = join(stateDir, "loop.state.json");
-const logPath = join(stateDir, "loop.log");
-const completionPromise = "KITCHEN_SHIP_COMPLETE";
+const cfg = getLoopConfig(root);
 
 function readState() {
-  if (!existsSync(statePath)) {
+  if (!existsSync(cfg.statePath)) {
     return {
       iteration: 0,
       lastTask: null,
       lastStatus: null,
       lastRunAt: null,
+      series: cfg.series,
     };
   }
-  return JSON.parse(readFileSync(statePath, "utf8"));
+  return JSON.parse(readFileSync(cfg.statePath, "utf8"));
 }
 
 function writeState(state) {
-  mkdirSync(stateDir, { recursive: true });
-  writeFileSync(statePath, `${JSON.stringify(state, null, 2)}\n`);
+  mkdirSync(dirname(cfg.statePath), { recursive: true });
+  writeFileSync(
+    cfg.statePath,
+    `${JSON.stringify({ ...state, series: cfg.series }, null, 2)}\n`,
+  );
 }
 
 function taskFiles() {
-  return readdirSync(tasksDir)
-    .filter((f) => /^[0-9]{3}-.+\.md$/.test(f))
+  if (!existsSync(cfg.tasksDir)) return [];
+  const pattern = taskFilePattern(cfg.series);
+  return readdirSync(cfg.tasksDir)
+    .filter((f) => pattern.test(f))
     .sort();
 }
 
 /** @returns {{ id: string, path: string, title: string, markdown: string, done: boolean, pendingCriteria: string[] }} */
 function parseTask(filename) {
-  const path = join(tasksDir, filename);
+  const path = join(cfg.tasksDir, filename);
   const markdown = readFileSync(path, "utf8");
   const id = filename.replace(/\.md$/, "");
   const titleMatch = markdown.match(/^#\s+Task\s+\d+:\s*(.+)$/m);
@@ -85,7 +84,22 @@ function nextTask() {
 }
 
 function allComplete() {
-  return nextTask() === null;
+  return nextTask() === null && taskFiles().length > 0;
+}
+
+function qaGuidelines() {
+  if (cfg.series !== "qa") return "";
+  return `
+## Code quality guidelines (this loop)
+- Minimize \`useEffect\` — prefer mutation return values, lifted state, server redirects
+- Minimize \`try/catch\` — use shared \`getErrorMessage\` from \`web/src/lib/errors.ts\`
+- Minimize type casts (\`as Id<>\`) — parse at route boundaries; infer Convex types
+- Maximize type inference — avoid explicit return types on components/helpers
+- Do NOT add react-query or tRPC — Convex \`useQuery\`/\`useMutation\` is the data layer
+- zod: route param + form validation only; zustand: client UI state only (settings tab/org)
+- Match exemplar: \`web/src/lib/merge/diffLinePick.ts\` (pure, inferred types)
+- Read plan: tasks reference \`plans/01N-qa-*.md\`
+`;
 }
 
 function buildPrompt() {
@@ -93,15 +107,16 @@ function buildPrompt() {
   const state = readState();
 
   if (!task) {
-    return `All Kitchen web/cloud tasks in tasks/ are complete.
+    return `All Kitchen ${cfg.loopLabel} tasks in ${cfg.tasksDir.replace(root + "/", "")}/ are complete.
 
 Run final verification, then output exactly:
-<promise>${completionPromise}</promise>`;
+<promise>${cfg.completionPromise}</promise>`;
   }
 
   const remaining = allTasks().filter((t) => !t.done).length;
+  const taskRelPath = task.path.replace(root + "/", "");
 
-  return `Build the Kitchen web/cloud product autonomously. Execute end-to-end — do not ask the user to confirm.
+  return `Refactor/improve the Kitchen ${cfg.loopLabel} autonomously. Execute end-to-end — do not ask the user to confirm.
 
 ## Repository
 ${root}
@@ -109,50 +124,39 @@ ${root}
 ## Product location
 All application code lives in \`./web\` (Next.js + Convex + Clerk).
 
-## Read first (ground truth)
-- tasks/README.md
-- ${task.path.replace(root + "/", "")}
+## Read first
+- ${cfg.tasksReadme}
+- ${taskRelPath}
+- ${cfg.plansReadme} (code QA plans 012–016 when doing QA tasks)
 - docs/the-kitchen-way.md
-- docs/concepts/schema.md
-- docs/concepts/permissions.md
-- docs/clients/web-and-mobile.md
 - GLOSSARY.md
-
+${qaGuidelines()}
 ## This iteration (#${state.iteration + 1})
 Complete exactly ONE task file:
 
 **${task.id}: ${task.title}**
 
-Task file: \`tasks/${task.id}.md\`
+Task file: \`${taskRelPath}\`
 
 Pending done criteria:
 ${task.pendingCriteria.map((c) => `- ${c}`).join("\n") || "- (parse failed — read task file)"}
 
 ## Success criteria
 1. Implement everything in the task's **Steps** and **Done criteria**
-2. Respect Kitchen invariants (insert-only versions, three entities, property ACL)
+2. Respect Kitchen invariants (insert-only versions, property ACL, no git UX)
 3. Run the task's **Verify** commands; fix failures before marking done
 4. Update the task file: check every \`- [ ]\` under **Done criteria** to \`- [x]\`
-5. If the task touches shared docs, update only what the task requires
-6. Commit with message: \`feat(web): ${task.id} <short summary>\`
-7. Summarize changes and name the next task
-
-## Constraints
-- Web app root: \`./web\` only (Convex in \`web/convex/\`)
-- Reference backend: Convex (docs/concepts/schema.md)
-- Auth: Clerk (Next.js App Router patterns)
-- No git operations in the product UX; versions are insert-only rows
-- Collab sessions are protocol — no \`collab_sessions\` Convex table
-- Voice/chat external; Kitchen syncs file bytes only
-- Use existing \`packages/collab-*\` where task 012 applies — do not duplicate protocol
+5. Commit with message: \`${cfg.commitPrefix}: ${task.id} <short summary>\`
+6. Summarize changes and name the next task
 
 ## Loop control
 - ${remaining} task(s) remain after this one
-- When ALL tasks/00*.md done criteria are \`[x]\` AND \`node scripts/task-loop.mjs verify\` passes, output exactly:
-  <promise>${completionPromise}</promise>
-- If blocked (missing API keys, external service), document blocker at bottom of task file under **Blockers** and do NOT output the completion promise
+- When ALL tasks in this series have done criteria \`[x]\` AND verify passes, output exactly:
+  <promise>${cfg.completionPromise}</promise>
+- If blocked, document under **Blockers** in the task file; do NOT output the completion promise
 
 ## Context
+- Series: ${cfg.series}
 - Previous iteration: ${state.lastStatus ?? "none"}
 - Last task: ${state.lastTask ?? "none"}
 `;
@@ -178,6 +182,8 @@ function cmdStatus() {
   console.log(
     JSON.stringify(
       {
+        series: cfg.series,
+        tasksDir: cfg.tasksDir.replace(root + "/", ""),
         complete: allComplete(),
         iteration: state.iteration,
         nextTask: task
@@ -189,8 +195,9 @@ function cmdStatus() {
           done: t.done,
           pendingCount: t.pendingCriteria.length,
         })),
-        logFile: logPath,
-        stateFile: statePath,
+        logFile: cfg.logPath,
+        stateFile: cfg.statePath,
+        completionPromise: cfg.completionPromise,
       },
       null,
       2,
@@ -212,14 +219,24 @@ function cmdBump() {
 function cmdVerify() {
   const webDir = join(root, "web");
   if (!existsSync(join(webDir, "package.json"))) {
-    console.error("web/package.json missing — run task 001 first");
+    console.error("web/package.json missing");
     process.exit(1);
   }
   execSync("npm run build", { cwd: webDir, stdio: "inherit" });
   try {
     execSync("npm run lint", { cwd: webDir, stdio: "inherit" });
   } catch {
-    // lint script optional until added
+    // lint warnings allowed
+  }
+  if (cfg.series === "qa") {
+    try {
+      execSync("npx tsc --noEmit -p tsconfig.json", {
+        cwd: webDir,
+        stdio: "inherit",
+      });
+    } catch {
+      process.exit(1);
+    }
   }
 }
 

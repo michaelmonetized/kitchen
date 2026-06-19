@@ -28,10 +28,11 @@ Instructions for autonomous agents (`gx`, `./loop.sh`, Cursor, Grok).
 ## Build loop
 
 ```bash
-./loop.sh                              # until shippable
-node scripts/task-loop.mjs status      # inspect progress
-node scripts/task-loop.mjs next        # next task id
-KITCHEN_LOOP_MAX_ITER=3 ./loop.sh      # capped run
+./loop.sh                              # product tasks (001–014) — shipped
+./loop-qa.sh                           # code QA tasks (tasks/qa/001–005)
+node scripts/task-loop.mjs status      # product series (default)
+KITCHEN_LOOP_SERIES=qa node scripts/task-loop.mjs status
+KITCHEN_LOOP_MAX_ITER=3 ./loop-qa.sh   # capped QA run
 ```
 
 `gx` profile matches `~/.config/zsh/aliases`:

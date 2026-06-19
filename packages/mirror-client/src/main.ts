@@ -7,6 +7,7 @@ import { CloudToDiskEngine } from "./cloud-to-disk.js";
 import { resolveConvexUrl, resolveMirrorRoot } from "./config.js";
 import { DiskToCloudEngine } from "./disk-to-cloud.js";
 import { EchoSuppressor } from "./echo-suppressor.js";
+import { normalizeAbsolutePath } from "./normalize-path.js";
 
 const JWT_REFRESH_MS = 50 * 60 * 1000;
 
@@ -33,12 +34,19 @@ export async function runMirror(): Promise<void> {
   await client.mutation(api.users.ensureCurrent, {});
 
   let cloud!: CloudToDiskEngine;
+  const remapPath = (oldPath: string, newPath: string, fileId: Id<"files">) => {
+    pathToFileId.delete(normalizeAbsolutePath(oldPath));
+    pathToFileId.set(normalizeAbsolutePath(newPath), fileId);
+  };
+
   const disk = new DiskToCloudEngine({
     client,
     mirrorRoot,
     echo,
     getSlugIndex: () => cloud.slugIndex,
     getPathToFileId: () => pathToFileId,
+    getTreeNodes: () => cloud.treeNodes,
+    onPathRemapped: remapPath,
     getCurrentVersionId: (fileId) => fileCurrentVersion.get(fileId),
     onVersionInserted: (fileId, versionId) => {
       fileCurrentVersion.set(fileId, versionId);
@@ -50,10 +58,14 @@ export async function runMirror(): Promise<void> {
     mirrorRoot,
     echo,
     onPathMapped: (absolutePath, fileId) => {
-      pathToFileId.set(path.resolve(absolutePath), fileId);
+      pathToFileId.set(normalizeAbsolutePath(absolutePath), fileId);
     },
+    onPathRemapped: remapPath,
     onVersionSynced: (fileId, versionId) => {
       fileCurrentVersion.set(fileId, versionId);
+    },
+    onContentHash: (fileId, hash) => {
+      disk.noteCloudHash(fileId, hash);
     },
     onProjectDir: (absoluteDir) => {
       void disk.watchDirectory(absoluteDir);

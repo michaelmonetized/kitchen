@@ -1,0 +1,6 @@
+01-hook|Introducing Kitchen. Your projects live in the cloud. Your editor sees them on disk. There is no git.
+02-problem|Most teams stack editor, disk, git, and remote hosting. Kitchen collapses storage, sync, work, and collaboration into one model.
+03-four-layers|Files live in the Sync Store as rows. WebSockets push every save in seconds. Your mirror keeps your editor and terminal happy. When you pair up, collab agents checkpoint into version history.
+04-three-modes|Work solo with live sync. Merge asynchronously when edits diverge. Or pair live across editors. Same storage model, three modes.
+05-product|The web beta is live now. Every save inserts a version row. When forks happen, you pick lines with Pierre Merge. Pair in nvim and VS Code together.
+06-cta|Try it at kitchen-gilt-nine dot vercel dot app. Get started free. Kitchen is a working codename, not the final product name.

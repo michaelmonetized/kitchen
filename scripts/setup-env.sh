@@ -36,3 +36,6 @@ if command -v vercel >/dev/null && [[ -f .vercel/project.json ]]; then
 fi
 
 echo "✓ Environment ready in web/.env.local"
+echo ""
+echo "Alternative for spikes: npx lakebed new <name> && npx lakebed dev"
+echo "  (auth + live WS mutations — see learning-records/0002-lakebed-alternative.md)"

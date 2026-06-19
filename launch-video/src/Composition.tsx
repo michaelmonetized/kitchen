@@ -1,0 +1,1 @@
+export { KitchenLaunch as MyComposition } from "./KitchenLaunch";

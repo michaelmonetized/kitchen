@@ -1,37 +1,41 @@
 # Web and Mobile
 
-Web and mobile clients access the Sync Store directly — no local mirror. They prove the protocol before desktop parity ships.
+Web and mobile clients access the Sync Store directly — no local mirror required. They are **not** editors.
 
 ## Web client
 
 ### Responsibilities
 
 - Authentication and session management
-- Org/project browser (tree UI over File rows)
-- Text editor for leaf files (Monaco or CodeMirror class)
-- Version history viewer
-- **Pierre Merge** host — primary merge surface
-- Org admin: roles, assignments, ownership transfer
+- Org/project **tree** browser (File rows)
+- **Pierre split diff** per file — history, per-line blame, compare versions
+- **Rollback** — advance pointer to a prior version
+- **Pierre Merge** host — primary merge surface when forked
+- **ACL admin** — roles, assignments, file-level `role:*` properties
+- **No built-in AI** — agents use `.kitchen/docs` + Convex CLI ([agent-discovery.md](./agent-discovery.md))
 
-### Why web first in build order
+### Non-goals
 
-- Fastest path to validate insert-only API and subscriptions
-- Merge UI is easier to iterate in browser
-- No filesystem edge cases
-
-### Non-goals (v0)
-
-- Full IDE replacement (no LSP commitment)
+- **Code editing** — no textarea/Monaco as primary UX; writes happen in local editors via mirror client
+- Full IDE (LSP, terminals, preview servers)
 - Local filesystem access
-- Desktop-class binary editing
+- Desktop-class binary editing in browser
+
+### Why web in build order
+
+- Validate insert-only API and subscriptions
+- Merge and blame UI easier to iterate in browser
+- Admin/review layer before mirror ships
+
+Bootstrap note: early spike used a textarea for dogfood — replaced by diff/blame surface per [ADR 0004](../adr/0004-web-is-not-an-editor.md).
 
 ## Mobile client
 
 ### Responsibilities
 
 - Read authorized projects and files
-- Light text edits (small files)
-- Push notifications on fork or mention (future)
+- Tree + read-only diff/blame (light)
+- Push notifications on fork (future)
 - Deep link to web merge UI for conflicts
 
 ### Constraints
@@ -46,10 +50,8 @@ Web and mobile clients access the Sync Store directly — no local mirror. They 
 |-------|---------|
 | Framework | React, React Native / Expo |
 | Sync SDK | Shared TypeScript client for WS + insert API |
-| Editor | Monaco (web), native TextInput (mobile) |
-| Diff | Pierre primitives via WASM or JS port |
-
-Stack is recommendation only — not locked.
+| Diff / blame | Pierre primitives |
+| Edit | **Mirror + local editor only** (not web) |
 
 ## Session model
 
@@ -58,50 +60,11 @@ Both clients:
 1. Obtain session token on login
 2. Open WebSocket with token
 3. Subscribe per project on open
-4. Unsubscribe on navigate away (mobile) or tab close
-
-## Editing flow (web)
-
-```
-1. User opens file in tree
-2. Client fetches current version content
-3. User edits in buffer
-4. Save → versions.insert
-5. If fork: modal → "Open merge view"
-```
-
-No autosave conflict resolution without user acknowledgment when forked.
-
-## Pair programming (optional)
-
-Web is an **optional** collab participant — not required for pair programming. Desktop **Collab agents** handle native editor pairing (nvim + VS Code, no plugins).
-
-Web may join the same collab relay session via Monaco/Yjs binding:
-
-```
-1. User opens file, joins session by sessionId
-2. Ops + presence sync over collab channel
-3. Checkpoint → versions.insert (same as desktop)
-```
-
-Voice coordination is external (Discord, Meet, phone). Kitchen does not build chat or audio.
-
-## Mobile
-
-Mobile **observes** active sessions (participants, read-only buffer stream). Join editing via deep link to web. No mobile-native collab editor in v0.
-
-## Admin flows (web)
-
-| Action | API |
-|--------|-----|
-| Create org | `files.insert(type: dir, parent: null)` |
-| Create project | `files.insert(type: dir, parent: orgId)` |
-| Define role | `roles.insert` |
-| Assign user | `userRoles.insert` |
-| Transfer ownership | `files.update(properties)` + role changes |
+4. Apply `version.insert` and tree events to UI (not mirror)
 
 ## Related
 
-- [Client Overview](./overview.md)
-- [Desktop Sync](./desktop-sync.md)
-- [Pierre Integration](../reference/pierre-integration.md)
+- [Desktop Sync](./desktop-sync.md) — where editing happens
+- [Collab Agent](./collab-agent.md)
+- [Overview](./overview.md)
+- [ADR 0004 — Web is not an editor](../adr/0004-web-is-not-an-editor.md)

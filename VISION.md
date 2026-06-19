@@ -46,7 +46,7 @@ Read the full onboarding narrative: [docs/the-kitchen-way.md](./docs/the-kitchen
 - **Three entities only** at the architecture top level: users, roles, files. Resist entity sprawl.
 - **Insert-only versions**. No upsert on the version layer. Divergence is a feature, not a bug.
 - **Mirror contract** is `$HOME/Projects` on desktop. Web and mobile are first-class but do not require local sync.
-- **Editor-agnostic work**. Kitchen is storage and sync — not an IDE.
+- **Editor-agnostic work**. Kitchen is storage and sync — not an IDE. Web is tree, diff, blame, history, rollback, and ACL — not a `<textarea>` editor.
 - **Collab is protocol, not entity**. Ephemeral session state must not become a fourth top-level Sync Store table.
 - **Pierre primitives first**. Fork diff/merge tooling only when integration blocks first-principles goals.
 - **Backend-agnostic**. Convex is a reference, not a dependency. The Sync Store contract matters; the vendor does not.
@@ -60,6 +60,7 @@ Read the full onboarding narrative: [docs/the-kitchen-way.md](./docs/the-kitchen
 - Building a custom NoSQL engine before client spikes prove the mirror contract
 - IDE features (LSP hosting, terminals, preview servers)
 - Built-in voice, video, or text chat — use phone, Meet, Discord, etc.
+- Built-in AI / LLM / "summarize edits" — harnesses already know Convex + VCS; they discover via `.kitchen/docs` + `npx convex` (emergent, not a Kitchen feature)
 - Terminal sharing (shared live shell) — each developer runs their own terminal
 - Required per-editor plugins for pair programming — v0 uses **Collab agent** only
 - Production auth, billing, and SOC2 — design for them, ship them later

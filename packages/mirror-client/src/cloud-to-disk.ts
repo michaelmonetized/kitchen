@@ -1,7 +1,8 @@
-import { mkdir } from "node:fs/promises";
+import { mkdir, rename, unlink } from "node:fs/promises";
 import path from "node:path";
 import type { ConvexClient } from "convex/browser";
 import { api } from "./convex-api.js";
+import { createHash } from "node:crypto";
 import { atomicWrite } from "./atomic-write.js";
 import { EchoSuppressor } from "./echo-suppressor.js";
 import {
@@ -28,8 +29,14 @@ export type CloudToDiskOptions = {
   mirrorRoot: string;
   echo: EchoSuppressor;
   onPathMapped?: (absolutePath: string, fileId: Id<"files">) => void;
+  onPathRemapped?: (
+    oldPath: string,
+    newPath: string,
+    fileId: Id<"files">,
+  ) => void;
   onProjectDir?: (absoluteDir: string) => void;
   onVersionSynced?: (fileId: Id<"files">, versionId: Id<"versions">) => void;
+  onContentHash?: (fileId: Id<"files">, hash: string) => void;
 };
 
 export class CloudToDiskEngine {
@@ -37,11 +44,17 @@ export class CloudToDiskEngine {
   private readonly mirrorRoot: string;
   private readonly echo: EchoSuppressor;
   private readonly onPathMapped?: (absolutePath: string, fileId: Id<"files">) => void;
+  private readonly onPathRemapped?: (
+    oldPath: string,
+    newPath: string,
+    fileId: Id<"files">,
+  ) => void;
   private readonly onProjectDir?: (absoluteDir: string) => void;
   private readonly onVersionSynced?: (
     fileId: Id<"files">,
     versionId: Id<"versions">,
   ) => void;
+  private readonly onContentHash?: (fileId: Id<"files">, hash: string) => void;
 
   private readonly projects = new Map<Id<"files">, ProjectInfo>();
   private readonly slugToProject = new Map<string, ProjectInfo>();
@@ -49,6 +62,7 @@ export class CloudToDiskEngine {
   private readonly childUnsubs = new Map<Id<"files">, Unsubscribe>();
   private readonly fileSubscriptions = new Map<Id<"files">, Unsubscribe>();
   private readonly writtenVersion = new Map<Id<"files">, string>();
+  private readonly fileIdToPath = new Map<Id<"files">, string>();
   private projectsUnsub: Unsubscribe | null = null;
 
   constructor(options: CloudToDiskOptions) {
@@ -56,12 +70,18 @@ export class CloudToDiskEngine {
     this.mirrorRoot = options.mirrorRoot;
     this.echo = options.echo;
     this.onPathMapped = options.onPathMapped;
+    this.onPathRemapped = options.onPathRemapped;
     this.onProjectDir = options.onProjectDir;
     this.onVersionSynced = options.onVersionSynced;
+    this.onContentHash = options.onContentHash;
   }
 
   get slugIndex(): Map<string, ProjectInfo> {
     return this.slugToProject;
+  }
+
+  get treeNodes(): TreeNode[] {
+    return [...this.nodes.values()];
   }
 
   start(): void {
@@ -174,14 +194,21 @@ export class CloudToDiskEngine {
         continue;
       }
 
-      this.onPathMapped?.(absolute, row._id);
-      this.ensureFileSubscription(row._id, absolute);
+      const previousPath = this.fileIdToPath.get(row._id);
+      if (previousPath && previousPath !== absolute) {
+        await this.relocateOnDisk(row._id, previousPath, absolute);
+      } else {
+        this.onPathMapped?.(absolute, row._id);
+        this.ensureFileSubscription(row._id, absolute);
+      }
+      this.fileIdToPath.set(row._id, absolute);
     }
 
     for (const [nodeId] of this.nodes) {
       const node = this.nodes.get(nodeId);
       if (!node || node.parentId !== parentId) continue;
       if (!seen.has(nodeId)) {
+        const removed = this.nodes.get(nodeId);
         this.nodes.delete(nodeId);
         const fileUnsub = this.fileSubscriptions.get(nodeId);
         if (fileUnsub) {
@@ -194,8 +221,39 @@ export class CloudToDiskEngine {
           childUnsub();
           this.childUnsubs.delete(nodeId);
         }
+        const diskPath = this.fileIdToPath.get(nodeId);
+        if (diskPath && removed?.type === "file") {
+          this.fileIdToPath.delete(nodeId);
+          this.echo.mark(diskPath);
+          void unlink(diskPath).catch(() => {});
+          console.log(`cloud→disk remove ${diskPath}`);
+        }
       }
     }
+  }
+
+  private async relocateOnDisk(
+    fileId: Id<"files">,
+    fromPath: string,
+    toPath: string,
+  ): Promise<void> {
+    await mkdir(path.dirname(toPath), { recursive: true });
+    this.echo.mark(fromPath);
+    this.echo.mark(toPath);
+    try {
+      await rename(fromPath, toPath);
+    } catch {
+      // Source may not exist yet if cloud metadata arrived before first write.
+    }
+    this.onPathRemapped?.(fromPath, toPath, fileId);
+    const unsub = this.fileSubscriptions.get(fileId);
+    if (unsub) {
+      unsub();
+      this.fileSubscriptions.delete(fileId);
+    }
+    this.writtenVersion.delete(fileId);
+    this.ensureFileSubscription(fileId, toPath);
+    console.log(`cloud→disk rename ${fromPath} → ${toPath}`);
   }
 
   private ensureFileSubscription(fileId: Id<"files">, absolutePath: string): void {
@@ -227,9 +285,20 @@ export class CloudToDiskEngine {
 
     const bytes = Buffer.from(payload.content, "utf8");
     this.echo.mark(absolutePath);
-    await atomicWrite(absolutePath, bytes);
+    this.onPathMapped?.(absolutePath, fileId);
+    try {
+      await atomicWrite(absolutePath, bytes);
+    } catch (err) {
+      console.error(`cloud→disk write failed ${absolutePath}:`, err);
+      return;
+    }
     this.writtenVersion.set(fileId, versionId);
+    this.onContentHash?.(fileId, sha256(bytes));
     this.onVersionSynced?.(fileId, versionId);
     console.log(`cloud→disk ${absolutePath} (v ${versionId})`);
   }
+}
+
+function sha256(bytes: Buffer): string {
+  return createHash("sha256").update(bytes).digest("hex");
 }

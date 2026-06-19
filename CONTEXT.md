@@ -4,9 +4,17 @@ This document is the canonical vocabulary for Kitchen. All docs, issues, and cod
 
 ## What Kitchen is
 
-Kitchen is a cloud-native project store. **Files are database rows**, not filesystem objects. Your machine sees a familiar tree at `$HOME/Projects`, but that tree is a **mirror** of the Sync Store — maintained in realtime over WebSockets.
+Kitchen is **version control with ACL first** — insert-only history, role-based access, human merge when edits diverge. The cloud Sync Store and local mirror are how that model reaches your editor; live collab is why the stack needs to exist, not generic file hosting.
 
-There is no git. No commits, branches, pull requests, or merges in the traditional sense. Every change creates a new **Version** row. Collaboration is live sync plus human-driven **Pierre Merge** when versions diverge.
+**Files are database rows**, not filesystem objects. Your machine sees a familiar tree at `$HOME/Projects`, but that tree is a **mirror** of the Sync Store — maintained in realtime over WebSockets.
+
+**Web client** is not an editor: tree view, Pierre split diffs, per-line blame, version history, rollback, and file-level ACL. **Editing** happens in local tools via the mirror. **No product AI** — review prompts like *"how has this file changed?"* go to the user's harness; it discovers Kitchen via `.kitchen/docs/` + `npx kitchen changes` (or Convex CLI). Daemon auth at `~/.kitchen/mirror-auth.json`.
+
+**Offline** — same as Notion on your phone: save locally, queue inserts, flush on reconnect; conflicts merge in web.
+
+**Blame** is per-version attribution (`authorUserId` on each insert) — not git commit blame. Tom's save is Tom's version; your save after is yours.
+
+There is no git — meaning no `add` / `commit` / `push` / `pull` / `rebase` loop. Mutations are tracked automatically: every save creates a new **Version** row. No branches or pull requests in the git sense. Collaboration is live sync plus human-driven **Pierre Merge** when versions diverge.
 
 ## Top-level architecture
 
@@ -97,6 +105,8 @@ The Mirror is the local filesystem projection at `$HOME/Projects`. Desktop clien
 3. Watch local changes and insert new versions upstream
 
 The mirror is a **view**, not the source of truth.
+
+**Tree moves** change a File row's `parentId` / `name` in the Sync Store. The mirror client diffs the subscribed file tree against `$HOME/Projects` to apply renames on disk or upstream from local `mv` events.
 
 ## Pierre Merge
 

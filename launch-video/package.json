@@ -1,0 +1,41 @@
+{
+  "name": "launch-video",
+  "version": "1.0.0",
+  "description": "My Remotion video",
+  "repository": {},
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@remotion/cli": "4.0.481",
+    "@remotion/google-fonts": "^4.0.481",
+    "@remotion/media": "^4.0.481",
+    "@remotion/tailwind-v4": "4.0.481",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.481",
+    "tailwindcss": "4.0.0"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.481",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "9.19.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle",
+    "upgrade": "remotion upgrade",
+    "lint": "eslint src && tsc",
+    "voiceover:check": "bash scripts/preflight-personal-voice.sh",
+    "voiceover:verify": "bash scripts/verify-personal-voice.sh",
+    "voiceover:record": "bash scripts/live-speech-record.sh",
+    "voiceover:import": "bash scripts/import-voiceover.sh",
+    "voiceover": "bash scripts/generate-voiceover.sh",
+    "render": "remotion render KitchenLaunch out/teaser.mp4"
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}

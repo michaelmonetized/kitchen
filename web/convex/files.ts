@@ -74,6 +74,23 @@ export const updateMetadata = mutation({
   },
 });
 
+export const markDeleted = mutation({
+  args: { fileId: v.id("files") },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const file = await ctx.db.get(args.fileId);
+    if (!file) throw new Error("NOT_FOUND");
+
+    await assertCanWrite(ctx, user._id, args.fileId);
+
+    await ctx.db.patch(args.fileId, {
+      properties: { ...file.properties, deleted: "true" },
+      updatedAt: Date.now(),
+    });
+    return args.fileId;
+  },
+});
+
 export const setCurrentVersion = mutation({
   args: {
     fileId: v.id("files"),

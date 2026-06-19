@@ -79,6 +79,10 @@ npm run dev:mirror
 - Binary files > 50MB
 - PH/HN launch ([`016-launch-gate-verify.md`](./016-launch-gate-verify.md))
 
+## Grill follow-up
+
+015 covers baseline bidirectional content sync. Launch gate also requires fork policy A, tree diff, soft delete — see [`017-mirror-grill-gaps.md`](./017-mirror-grill-gaps.md) (ADRs 0002–0003).
+
 ## References
 
 - [`docs/clients/desktop-sync.md`](../docs/clients/desktop-sync.md)

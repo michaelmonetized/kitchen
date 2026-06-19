@@ -38,13 +38,15 @@ Working title only. Not the final product name. See [README.md](../README.md).
 
 ### Is there a working app?
 
-Not yet. This repository is design-phase documentation and plans.
+Yes — a **web beta** is live at [kitchen-gilt-nine.vercel.app](https://kitchen-gilt-nine.vercel.app). Sign up, create a project, and edit files in the browser with live sync across tabs.
+
+For the full *"your editor sees them on disk"* promise, install the **mirror client** (`packages/mirror-client`) — it bidirectionally syncs Convex ↔ `$HOME/Projects/`. See the root [README](../README.md) **Try it** section.
 
 ## Technical
 
 ### What backend does Kitchen use?
 
-Undecided. [Convex](https://docs.convex.dev/) is the reference profile (WebSockets, live queries). The **Sync Store contract** matters; the vendor does not.
+[Convex](https://docs.convex.dev/) is the **reference implementation** in `./web` (WebSockets, live queries, Clerk auth). The **Sync Store contract** is vendor-agnostic — the schema and invariants matter more than the host.
 
 ### Can I use git inside the mirror?
 
@@ -56,7 +58,7 @@ Same as text: Version `content` bytes + File `mime`. No separate blob service in
 
 ### What happens offline?
 
-Undefined for v0. Assume connected. Offline queue policy is TBD in [Desktop Sync](./clients/desktop-sync.md).
+Same as Notion on your phone: keep editing locally; the mirror queues version inserts and flushes on reconnect. If the cloud moved while you were offline, you get a fork and merge in web. Implementation is [task 020](../tasks/020-offline-save-queue.md); until that ships, treat offline as best-effort. See [Desktop Sync](./clients/desktop-sync.md) and [ADR 0006](./adr/0006-offline-save-until-reconnect.md).
 
 ### How big can a file be?
 

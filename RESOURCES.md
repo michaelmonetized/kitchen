@@ -35,6 +35,7 @@ High-trust materials for grounding Kitchen concepts. Prefer these over parametri
 | Resource | URL | Why |
 |----------|-----|-----|
 | Convex documentation | https://docs.convex.dev/ | WebSockets, live queries, mutations |
+| Lakebed docs | https://docs.lakebed.dev/ | Agent-native capsules: auth + live DB + WS mutations in one CLI |
 | Convex file storage | https://docs.convex.dev/file-storage | Binary blob patterns (compare to version column approach) |
 
 ## Diff and merge UX

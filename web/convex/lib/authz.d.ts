@@ -1,0 +1,10 @@
+import type { Id } from "../_generated/dataModel";
+import type { MutationCtx, QueryCtx } from "../_generated/server";
+type Ctx = QueryCtx | MutationCtx;
+export declare function getOrgId(ctx: Ctx, fileId: Id<"files">): Promise<Id<"files">>;
+export declare function canRead(ctx: Ctx, userId: Id<"users">, fileId: Id<"files">): Promise<boolean>;
+export declare function canWrite(ctx: Ctx, userId: Id<"users">, fileId: Id<"files">): Promise<boolean>;
+export declare function assertCanRead(ctx: Ctx, userId: Id<"users">, fileId: Id<"files">): Promise<void>;
+export declare function assertCanWrite(ctx: Ctx, userId: Id<"users">, fileId: Id<"files">): Promise<void>;
+export declare function hasAdmin(ctx: Ctx, userId: Id<"users">, orgId: Id<"files">): Promise<boolean>;
+export {};
