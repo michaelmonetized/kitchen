@@ -11,16 +11,16 @@ Editing belongs in local editors via mirror client. Web may trigger rollback (po
 
 ## Done criteria
 
-- [ ] Remove `<textarea>` from primary file route (`files/[fileId]/page.tsx` / `FileEditor.tsx`)
-- [ ] **History panel:** list versions for file (`authorUserId`, timestamp) — last 10 visible; link to older
-- [ ] **Pierre split view:** select two versions (or version vs current) — side-by-side diff
-- [ ] **Per-line blame:** map lines to version authors (from Pierre + version metadata)
-- [ ] **Rollback:** action sets `currentVersionId` to chosen version (mutation exists or add `files.setCurrentVersion` UI)
-- [ ] **ACL controls:** file properties `role:*` editor on file or project settings (reuse org admin patterns)
-- [ ] Fork badge → merge route unchanged
-- [ ] **No AI UI** — no summarize button; agents use `.kitchen/docs` + Convex CLI ([ADR 0005](../docs/adr/0005-no-product-ai-agent-discovery.md))
-- [ ] `docs/clients/web-and-mobile.md` aligned (no "text editor" responsibility)
-- [ ] No regression: `npm run build` in `web/`
+- [x] Remove `<textarea>` from primary file route (`files/[fileId]/page.tsx` / `FileEditor.tsx`)
+- [x] **History panel:** list versions for file (`authorUserId`, timestamp) — last 10 visible; link to older
+- [x] **Pierre split view:** select two versions (or version vs current) — side-by-side diff
+- [x] **Per-line blame:** map lines to version authors (from Pierre + version metadata)
+- [x] **Rollback:** action sets `currentVersionId` to chosen version (mutation exists or add `files.setCurrentVersion` UI)
+- [x] **ACL controls:** file properties `role:*` editor on file or project settings (reuse org admin patterns)
+- [x] Fork badge → merge route unchanged
+- [x] **No AI UI** — no summarize button; agents use `.kitchen/docs` + Convex CLI ([ADR 0005](../docs/adr/0005-no-product-ai-agent-discovery.md))
+- [x] `docs/clients/web-and-mobile.md` aligned (no "text editor" responsibility)
+- [x] No regression: `npm run build` in `web/`
 
 ## Out of scope
 

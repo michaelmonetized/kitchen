@@ -1,10 +1,24 @@
 import { query } from "./_generated/server";
+import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Id } from "./_generated/dataModel";
-import { canRead } from "./lib/authz";
+import { canRead, canWrite } from "./lib/authz";
+import { computeBlame } from "./lib/blame";
 import { isDeleted } from "./lib/deleted";
 import { requireUser } from "./lib/session";
 import { getVersionHeads } from "./lib/versionHeads";
+
+function decodeVersionContent(content: ArrayBuffer) {
+  return new TextDecoder().decode(new Uint8Array(content));
+}
+
+async function authorLabel(
+  ctx: QueryCtx,
+  authorUserId: Id<"users">,
+) {
+  const author = await ctx.db.get(authorUserId);
+  return author?.displayName ?? author?.email ?? String(authorUserId);
+}
 
 export const projectsForUser = query({
   args: {},
@@ -211,22 +225,132 @@ export const getForkMergeContext = query({
 });
 
 export const listVersions = query({
-  args: { fileId: v.id("files"), limit: v.optional(v.number()) },
+  args: {
+    fileId: v.id("files"),
+    limit: v.optional(v.number()),
+    cursor: v.optional(v.number()),
+  },
   handler: async (ctx, args) => {
     const user = await requireUser(ctx);
-    if (!(await canRead(ctx, user._id, args.fileId))) return [];
+    const file = await ctx.db.get(args.fileId);
+    if (!file || !(await canRead(ctx, user._id, args.fileId))) return [];
 
-    const versions = await ctx.db
+    const all = await ctx.db
       .query("versions")
       .withIndex("by_file", (q) => q.eq("fileId", args.fileId))
       .order("desc")
-      .take(args.limit ?? 50);
+      .collect();
 
-    return versions.map((ver) => ({
-      _id: ver._id,
-      _creationTime: ver._creationTime,
-      authorUserId: ver.authorUserId,
-      parentVersionIds: ver.parentVersionIds,
-    }));
+    const offset = args.cursor ?? 0;
+    const limit = args.limit ?? 50;
+    const slice = all.slice(offset, offset + limit);
+
+    return Promise.all(
+      slice.map(async (ver) => ({
+        _id: ver._id,
+        _creationTime: ver._creationTime,
+        authorUserId: ver.authorUserId,
+        authorLabel: await authorLabel(ctx, ver.authorUserId),
+        parentVersionIds: ver.parentVersionIds,
+        isCurrent: ver._id === file.currentVersionId,
+      })),
+    );
+  },
+});
+
+export const getFileCompareContext = query({
+  args: {
+    fileId: v.id("files"),
+    leftVersionId: v.optional(v.id("versions")),
+    rightVersionId: v.optional(v.id("versions")),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const file = await ctx.db.get(args.fileId);
+    if (!file || file.type !== "file") return null;
+    if (!(await canRead(ctx, user._id, file._id))) return null;
+
+    const rows = await ctx.db
+      .query("versions")
+      .withIndex("by_file", (q) => q.eq("fileId", args.fileId))
+      .collect();
+
+    const versionPayload = await Promise.all(
+      rows.map(async (ver) => ({
+        _id: ver._id,
+        _creationTime: ver._creationTime,
+        authorUserId: ver.authorUserId,
+        authorLabel: await authorLabel(ctx, ver.authorUserId),
+        content: decodeVersionContent(ver.content),
+        isCurrent: ver._id === file.currentVersionId,
+      })),
+    );
+
+    const sorted = [...versionPayload].sort(
+      (a, b) => a._creationTime - b._creationTime,
+    );
+
+    let left = sorted[sorted.length - 2] ?? sorted[0] ?? null;
+    let right = sorted[sorted.length - 1] ?? null;
+
+    if (args.leftVersionId) {
+      left = sorted.find((v) => v._id === args.leftVersionId) ?? left;
+    }
+    if (args.rightVersionId) {
+      right = sorted.find((v) => v._id === args.rightVersionId) ?? right;
+    }
+
+    return {
+      file,
+      versions: sorted,
+      left,
+      right,
+      canWrite: await canWrite(ctx, user._id, file._id),
+    };
+  },
+});
+
+export const getFileBlame = query({
+  args: {
+    fileId: v.id("files"),
+    versionId: v.optional(v.id("versions")),
+  },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const file = await ctx.db.get(args.fileId);
+    if (!file || file.type !== "file") return null;
+    if (!(await canRead(ctx, user._id, file._id))) return null;
+
+    const rows = await ctx.db
+      .query("versions")
+      .withIndex("by_file", (q) => q.eq("fileId", args.fileId))
+      .collect();
+
+    const targetId = args.versionId ?? file.currentVersionId;
+    const writable = await canWrite(ctx, user._id, file._id);
+    if (!targetId) {
+      return { file, lines: [] as ReturnType<typeof computeBlame>, canWrite: writable };
+    }
+
+    const target = rows.find((row) => row._id === targetId);
+    if (!target) {
+      return { file, lines: [] as ReturnType<typeof computeBlame>, canWrite: writable };
+    }
+
+    const chronology = rows
+      .filter((row) => row._creationTime <= target._creationTime)
+      .sort((a, b) => a._creationTime - b._creationTime);
+
+    const snapshots = await Promise.all(
+      chronology.map(async (ver) => ({
+        _id: String(ver._id),
+        _creationTime: ver._creationTime,
+        authorUserId: String(ver.authorUserId),
+        authorLabel: await authorLabel(ctx, ver.authorUserId),
+        content: decodeVersionContent(ver.content),
+      })),
+    );
+
+    return { file, lines: computeBlame(snapshots), canWrite: writable };
   },
 });

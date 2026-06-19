@@ -233,7 +233,7 @@ export function MergeView({
           href={`/app/projects/${projectId}/files/${fileId}`}
           className="text-sm text-stone-700 underline"
         >
-          Back to editor
+          Back to file
         </Link>
       </div>
     );
