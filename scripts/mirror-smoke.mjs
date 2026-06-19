@@ -15,7 +15,14 @@ import { createClerkClient } from "@clerk/backend";
 import { ConvexHttpClient } from "convex/browser";
 import { anyApi } from "convex/server";
 import { createHash } from "node:crypto";
-import { mkdir, readFile, rename, stat, unlink, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  readFile,
+  rename,
+  stat,
+  unlink,
+  writeFile,
+} from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import path from "node:path";
 import { spawn } from "node:child_process";
@@ -23,6 +30,8 @@ import { spawn } from "node:child_process";
 const api = anyApi;
 const smokeEmail =
   process.env.SMOKE_TEST_EMAIL ?? "kitchen-smoke@hustlestack.dev";
+const smokeEmailB =
+  process.env.SMOKE_TEST_EMAIL_B ?? "kitchen-smoke-b@hustlestack.dev";
 const convexUrl = process.env.CONVEX_URL ?? process.env.NEXT_PUBLIC_CONVEX_URL;
 const mirrorRoot =
   process.env.MIRROR_ROOT ??
@@ -120,6 +129,42 @@ async function convexClient() {
   const client = new ConvexHttpClient(convexUrl);
   client.setAuth(token.jwt);
   return client;
+}
+
+async function convexClientForEmail(email) {
+  const secretKey = process.env.CLERK_SECRET_KEY;
+  if (!secretKey) fail("CLERK_SECRET_KEY required");
+  const clerk = createClerkClient({ secretKey });
+  const listed = await clerk.users.getUserList({
+    emailAddress: [email],
+    limit: 1,
+  });
+  const clerkUserId =
+    listed.data[0]?.id ??
+    (
+      await clerk.users.createUser({
+        emailAddress: [email],
+        password: "KitchenSmokeTest1!",
+        skipPasswordChecks: true,
+        skipPasswordRequirement: true,
+      })
+    ).id;
+
+  const sessions = await clerk.sessions.getSessionList({
+    userId: clerkUserId,
+    status: "active",
+    limit: 1,
+  });
+  const session =
+    sessions.data[0] ?? (await clerk.sessions.createSession({ userId: clerkUserId }));
+
+  const token = await clerk.sessions.getToken(session.id, "convex");
+  if (!token?.jwt) fail(`Convex JWT for ${email}`);
+  const client = new ConvexHttpClient(convexUrl);
+  client.setAuth(token.jwt);
+  const convexUserId = await client.mutation(api.users.ensureCurrent, {});
+  if (!convexUserId) fail(`ensureCurrent failed for ${email}`);
+  return { client, convexUserId };
 }
 
 async function versionCount(client, fileId) {
@@ -364,6 +409,95 @@ async function main() {
       fail("version history missing after tombstone");
     }
     pass("version history still queryable by fileId");
+
+    const mkdirName = `local-mkdir-${stamp}`;
+    const mkdirPath = path.join(dir, mkdirName);
+    await mkdir(mkdirPath);
+    await waitFor("local mkdir → Convex dir row", async () => {
+      const tree = await client.query(api.queries.listProjectTree, { projectId });
+      return tree.some(
+        (n) => n.name === mkdirName && n.type === "dir" && n.parentId === projectId,
+      );
+    });
+    pass("local mkdir created Convex dir row");
+
+    const { client: userBClient, convexUserId: userBConvexId } =
+      await convexClientForEmail(smokeEmailB);
+
+    const orgContext = await client.query(api.admin.getOrgContext, {
+      orgId: row.org._id,
+    });
+    const editorRole = orgContext?.roles?.find((r) => r.name === "editor");
+    if (!editorRole) fail("editor role missing for fork smoke");
+    try {
+      await client.mutation(api.roles.assignUser, {
+        userId: userBConvexId,
+        roleId: editorRole._id,
+        projectFileId: projectId,
+      });
+    } catch (err) {
+      if (!String(err).includes("ALREADY")) throw err;
+    }
+
+    const forkFile = `fork-policy-${stamp}.txt`;
+    const forkId = await client.mutation(api.files.insert, {
+      parentId: projectId,
+      type: "file",
+      name: forkFile,
+      mime: "text/plain",
+    });
+    const forkSeed = `fork-base-${stamp}\n`;
+    await client.mutation(api.versions.insert, {
+      fileId: forkId,
+      content: new TextEncoder().encode(forkSeed).buffer,
+    });
+    const seedVersionRow = await client.query(api.queries.listVersions, {
+      fileId: forkId,
+      limit: 1,
+    });
+    const seedVersionId = seedVersionRow[0]?._id;
+    if (!seedVersionId) fail("fork seed version missing");
+
+    const forkPath = path.join(dir, forkFile);
+    await waitFor("fork test file materialized", async () => {
+      try {
+        await readFile(forkPath, "utf8");
+        return true;
+      } catch {
+        return false;
+      }
+    });
+    await new Promise((r) => setTimeout(r, 1500));
+
+    const userAEdit = `user-a-${stamp}\n`;
+    await writeFile(forkPath, forkSeed + userAEdit, "utf8");
+    await waitFor("fork user A disk edit in Convex", async () => {
+      const row = await client.query(api.queries.getFileWithContent, { fileId: forkId });
+      return row?.content?.includes(userAEdit.trim()) ?? false;
+    });
+
+    const userBEdit = `user-b-remote-${stamp}\n`;
+    await userBClient.mutation(api.versions.insert, {
+      fileId: forkId,
+      content: new TextEncoder().encode(forkSeed + userBEdit).buffer,
+      parentVersionIds: [seedVersionId],
+    });
+
+    await waitFor("fork state in Convex", async () => {
+      const file = await client.query(api.queries.getFile, { fileId: forkId });
+      return file?.forked === true;
+    });
+    pass("two-user save created fork in Convex");
+
+    await new Promise((r) => setTimeout(r, 2000));
+    const onDiskAfterFork = await readFile(forkPath, "utf8");
+    if (!onDiskAfterFork.includes(userAEdit.trim())) {
+      fail("fork policy: user A bytes missing from disk");
+    }
+    if (onDiskAfterFork.includes(userBEdit.trim())) {
+      fail("fork policy: remote user B bytes overwrote local disk (policy A violated)");
+    }
+    pass("fork policy A: each machine keeps own bytes until merge");
 
     console.log("\nAll mirror smoke checks passed.");
   } finally {

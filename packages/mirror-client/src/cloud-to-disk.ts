@@ -5,6 +5,7 @@ import { api } from "./convex-api.js";
 import { createHash } from "node:crypto";
 import { atomicWrite } from "./atomic-write.js";
 import { EchoSuppressor } from "./echo-suppressor.js";
+import { notifyFork } from "./notify.js";
 import {
   buildRelativePath,
   mirrorPath,
@@ -63,6 +64,8 @@ export class CloudToDiskEngine {
   private readonly fileSubscriptions = new Map<Id<"files">, Unsubscribe>();
   private readonly writtenVersion = new Map<Id<"files">, string>();
   private readonly fileIdToPath = new Map<Id<"files">, string>();
+  private readonly fileIdToProject = new Map<Id<"files">, Id<"files">>();
+  private readonly forkNotified = new Set<Id<"files">>();
   private projectsUnsub: Unsubscribe | null = null;
 
   constructor(options: CloudToDiskOptions) {
@@ -189,6 +192,7 @@ export class CloudToDiskEngine {
 
       const absolute = mirrorPath(this.mirrorRoot, project.slug, relative);
       if (row.type === "dir") {
+        this.echo.mark(absolute);
         await mkdir(absolute, { recursive: true });
         this.ensureChildrenSubscription(row._id, projectId);
         continue;
@@ -199,9 +203,14 @@ export class CloudToDiskEngine {
         await this.relocateOnDisk(row._id, previousPath, absolute);
       } else {
         this.onPathMapped?.(absolute, row._id);
-        this.ensureFileSubscription(row._id, absolute);
+        this.ensureFileSubscription(row._id, absolute, projectId);
       }
       this.fileIdToPath.set(row._id, absolute);
+      this.fileIdToProject.set(row._id, projectId);
+
+      if (row.forked) {
+        void this.notifyForkIfNeeded(row._id, row.name, projectId);
+      }
     }
 
     for (const [nodeId] of this.nodes) {
@@ -224,6 +233,8 @@ export class CloudToDiskEngine {
         const diskPath = this.fileIdToPath.get(nodeId);
         if (diskPath && removed?.type === "file") {
           this.fileIdToPath.delete(nodeId);
+          this.fileIdToProject.delete(nodeId);
+          this.forkNotified.delete(nodeId);
           this.echo.mark(diskPath);
           void unlink(diskPath).catch(() => {});
           console.log(`cloud→disk remove ${diskPath}`);
@@ -252,18 +263,35 @@ export class CloudToDiskEngine {
       this.fileSubscriptions.delete(fileId);
     }
     this.writtenVersion.delete(fileId);
-    this.ensureFileSubscription(fileId, toPath);
+    const projectId = this.fileIdToProject.get(fileId);
+    if (projectId) {
+      this.ensureFileSubscription(fileId, toPath, projectId);
+    }
     console.log(`cloud→disk rename ${fromPath} → ${toPath}`);
   }
 
-  private ensureFileSubscription(fileId: Id<"files">, absolutePath: string): void {
+  private async notifyForkIfNeeded(
+    fileId: Id<"files">,
+    fileName: string,
+    projectId: Id<"files">,
+  ): Promise<void> {
+    if (this.forkNotified.has(fileId)) return;
+    this.forkNotified.add(fileId);
+    await notifyFork({ fileId, projectId, fileName });
+  }
+
+  private ensureFileSubscription(
+    fileId: Id<"files">,
+    absolutePath: string,
+    projectId: Id<"files">,
+  ): void {
     if (this.fileSubscriptions.has(fileId)) return;
 
     const unsub = this.client.onUpdate(
-      api.queries.getFileWithContent,
+      api.queries.mirrorFileSync,
       { fileId },
       (payload) => {
-        void this.writeFileContent(fileId, absolutePath, payload);
+        void this.writeFileContent(fileId, absolutePath, projectId, payload);
       },
     );
     this.fileSubscriptions.set(fileId, unsub);
@@ -272,13 +300,28 @@ export class CloudToDiskEngine {
   private async writeFileContent(
     fileId: Id<"files">,
     absolutePath: string,
+    projectId: Id<"files">,
     payload: {
-      file: { currentVersionId?: Id<"versions"> };
+      file: { forked: boolean; name: string };
       content: string | null;
       version: { _id: Id<"versions"> } | null;
     } | null,
   ): Promise<void> {
-    if (!payload?.version || payload.content === null) return;
+    if (!payload) return;
+
+    if (payload.file.forked) {
+      await this.notifyForkIfNeeded(fileId, payload.file.name, projectId);
+    }
+
+    // Fork policy A: skip remote users' version inserts (no syncable author head).
+    if (!payload.version || payload.content === null) {
+      if (payload.file.forked) {
+        console.log(
+          `cloud→disk freeze ${absolutePath} (forked — remote head skipped)`,
+        );
+      }
+      return;
+    }
 
     const versionId = payload.version._id;
     if (this.writtenVersion.get(fileId) === versionId) return;

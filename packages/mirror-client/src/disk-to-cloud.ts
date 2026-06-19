@@ -7,6 +7,7 @@ import { api } from "./convex-api.js";
 import type { Id } from "./types.js";
 import { EchoSuppressor } from "./echo-suppressor.js";
 import { normalizeAbsolutePath } from "./normalize-path.js";
+import { notifyFork } from "./notify.js";
 import {
   buildRelativePath,
   parseMirrorPath,
@@ -183,7 +184,55 @@ export class DiskToCloudEngine {
       return;
     }
     if (await this.tryHandleRename(absolutePath)) return;
+    if (await this.tryEnsureDirInCloud(absolutePath)) return;
     await this.uploadIfChanged(absolutePath);
+  }
+
+  private async tryEnsureDirInCloud(absolutePath: string): Promise<boolean> {
+    const resolved = normalizeAbsolutePath(absolutePath);
+    let info;
+    try {
+      info = await stat(resolved);
+    } catch {
+      return false;
+    }
+    if (!info.isDirectory()) return false;
+
+    const parsed = parseMirrorPath(
+      this.mirrorRoot,
+      resolved,
+      this.getSlugIndex(),
+    );
+    if (!parsed) return false;
+
+    const segments = parsed.relativePath.split(path.sep);
+    const name = segments.pop();
+    if (!name) return false;
+    const relativeDir = segments.join(path.sep);
+
+    const nodes = this.getTreeNodes?.() ?? [];
+    const parentId =
+      resolveParentId(nodes, parsed.project.projectId, relativeDir) ??
+      parsed.project.projectId;
+
+    const exists = nodes.some(
+      (n) =>
+        n.parentId === parentId && n.name === name && n.type === "dir",
+    );
+    if (exists) return true;
+
+    try {
+      await this.client.mutation(api.files.insert, {
+        parentId,
+        type: "dir",
+        name,
+      });
+      console.log(`disk→cloud mkdir ${resolved}`);
+      return true;
+    } catch (err) {
+      console.error(`disk→cloud mkdir failed ${resolved}:`, err);
+      return false;
+    }
   }
 
   private async tryHandleRename(absolutePath: string): Promise<boolean> {
@@ -339,6 +388,12 @@ export class DiskToCloudEngine {
       this.onCloudHash?.(fileId, hash);
 
       if (result?.forked) {
+        const fileName = path.basename(absolutePath);
+        void notifyFork({
+          fileId,
+          projectId: parsed.project.projectId,
+          fileName,
+        });
         console.warn(`fork detected for ${absolutePath} — open Kitchen merge UI`);
       } else {
         console.log(`disk→cloud ${absolutePath}`);

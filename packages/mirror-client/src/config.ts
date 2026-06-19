@@ -25,3 +25,11 @@ export function resolveConvexUrl(): string {
 export function resolveClerkPublishableKey(): string | undefined {
   return process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 }
+
+export function resolveSiteUrl(): string {
+  return (
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.KITCHEN_SITE_URL ??
+    "https://kitchen-gilt-nine.vercel.app"
+  );
+}

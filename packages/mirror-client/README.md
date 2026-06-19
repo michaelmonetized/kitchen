@@ -73,6 +73,37 @@ npm run dev:mirror
 Edit a mirrored file in your local editor → Convex `versions.insert` → web UI updates.  
 Edit in the web app → Convex subscription → local file updates (echo-suppressed ~500ms).
 
+## Fork policy A (grill)
+
+When `file.forked` is true, disk holds one byte stream but Convex may have multiple version heads:
+
+| Direction | Behavior |
+|-----------|----------|
+| **Cloud → disk** | Writes bytes only for versions where `authorUserId` matches this daemon's session user. Remote users' inserts are **skipped** (local bytes frozen). |
+| **Disk → cloud** | Still allowed — local saves insert new heads as usual. |
+| **Notify** | macOS notification + deep link to web merge UI (`/app/projects/.../files/.../merge`). |
+
+After merge inserts a single composed version, `forked` clears and normal sync resumes.
+
+## Tree diff (moves)
+
+The daemon keeps a `fileId ↔ mirror path` map per project:
+
+| Direction | Behavior |
+|-----------|----------|
+| **Cloud → disk** | `parentId` / `name` change → `fs.rename` / `mkdir` (echo-suppressed). |
+| **Disk → cloud** | Local `mv` → `files.updateMetadata`; local `mkdir` → `files.insert` (`type: dir`). |
+
+## Soft delete
+
+| Direction | Behavior |
+|-----------|----------|
+| **Disk → cloud** | Local `rm` (after rename window) → `files.markDeleted` (`properties.deleted = "true"`). |
+| **Cloud → disk** | Tombstone removes path from live tree subscription → `unlink` on disk. |
+| **History** | Version rows remain queryable by `fileId` for audit. |
+
+Tree queries (`children`, `listProjectTree`) and mirror subscriptions skip `deleted === "true"`.
+
 ## Scripts
 
 | Command | Description |

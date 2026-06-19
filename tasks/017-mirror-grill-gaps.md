@@ -16,30 +16,39 @@ Extend `@kitchen/mirror-client` and Convex so the mirror matches grill decisions
 
 ### Fork policy A
 
-- [ ] Cloud→disk: when `file.forked`, write version bytes only if `authorUserId === session user`
-- [ ] Cloud→disk: skip remote users' version inserts on forked files
-- [ ] Tray/notify + deep link to web merge UI on fork
-- [ ] Manual verify: two-user save → each machine keeps own bytes until merge
+- [x] Cloud→disk: when `file.forked`, write version bytes only if `authorUserId === session user`
+- [x] Cloud→disk: skip remote users' version inserts on forked files
+- [x] Tray/notify + deep link to web merge UI on fork
+- [x] Manual verify: two-user save → each machine keeps own bytes until merge
 
 ### Tree diff (ADR 0002)
 
-- [ ] `fileId ↔ mirror path` map maintained per project
-- [ ] WS metadata change (`parentId`/`name`) → `fs.rename` / `mkdir` (echo-suppressed)
-- [ ] Local `mv` / mkdir → `files.updateMetadata` / `files.insert`
-- [ ] Verify: local `mv` → web tree; web move → disk rename
+- [x] `fileId ↔ mirror path` map maintained per project
+- [x] WS metadata change (`parentId`/`name`) → `fs.rename` / `mkdir` (echo-suppressed)
+- [x] Local `mv` / mkdir → `files.updateMetadata` / `files.insert`
+- [x] Verify: local `mv` → web tree; web move → disk rename
 
 ### Soft delete (ADR 0003)
 
-- [ ] `files.markDeleted` mutation (sets `properties.deleted = "true"`)
-- [ ] `children`, `listProjectTree`, mirror subscription filter `deleted !== "true"`
-- [ ] Local `rm` → tombstone row; cloud tombstone → diff removes disk path
-- [ ] Versions for tombstoned file still fetchable by `fileId` (audit)
-- [ ] Verify: `rm` locally → gone from live tree; history query still works
+- [x] `files.markDeleted` mutation (sets `properties.deleted = "true"`)
+- [x] `children`, `listProjectTree`, mirror subscription filter `deleted !== "true"`
+- [x] Local `rm` → tombstone row; cloud tombstone → diff removes disk path
+- [x] Versions for tombstoned file still fetchable by `fileId` (audit)
+- [x] Verify: `rm` locally → gone from live tree; history query still works
 
 ### Docs
 
-- [ ] `property-syntax.md` documents `deleted` (done in grill)
-- [ ] `packages/mirror-client/README.md` updated for fork/tree/delete
+- [x] `property-syntax.md` documents `deleted` (done in grill)
+- [x] `packages/mirror-client/README.md` updated for fork/tree/delete
+
+## Verify
+
+```bash
+npm run build -w @kitchen/mirror-client
+cd web && npm run build
+cd web && npx convex dev --once
+node scripts/mirror-smoke.mjs
+```
 
 ## References
 

@@ -134,6 +134,44 @@ export const getFileWithContent = query({
   },
 });
 
+/** Mirror client sync payload — fork policy A: author's head only when forked. */
+export const mirrorFileSync = query({
+  args: { fileId: v.id("files") },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const file = await ctx.db.get(args.fileId);
+    if (!file || file.type !== "file") return null;
+    if (!(await canRead(ctx, user._id, file._id))) return null;
+
+    const decode = (content: ArrayBuffer) =>
+      new TextDecoder().decode(new Uint8Array(content));
+
+    if (!file.forked) {
+      if (!file.currentVersionId) {
+        return { file, content: null, version: null };
+      }
+      const version = await ctx.db.get(file.currentVersionId);
+      if (!version) return { file, content: null, version: null };
+      return { file, content: decode(version.content), version };
+    }
+
+    const heads = await getVersionHeads(ctx, args.fileId);
+    const userHead = heads
+      .filter((head) => head.authorUserId === user._id)
+      .sort((a, b) => b._creationTime - a._creationTime)[0];
+
+    if (!userHead) {
+      return { file, content: null, version: null };
+    }
+
+    return {
+      file,
+      content: decode(userHead.content),
+      version: userHead,
+    };
+  },
+});
+
 export const getForkMergeContext = query({
   args: {
     fileId: v.id("files"),
