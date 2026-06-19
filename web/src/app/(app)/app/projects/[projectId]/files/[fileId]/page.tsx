@@ -19,7 +19,7 @@ export default async function FilePage({
     <>
       <AppHeader title="Editor" />
       <main className="flex-1 p-6">
-        <FileEditor projectId={projectId} fileId={parsedFileId} />
+        <FileEditor projectId={parsedProjectId} fileId={parsedFileId} />
       </main>
     </>
   );

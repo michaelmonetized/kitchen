@@ -15,7 +15,7 @@ export function FileEditor({
   projectId,
   fileId,
 }: {
-  projectId: string;
+  projectId: Id<"files">;
   fileId: Id<"files">;
 }) {
   const data = useQuery(api.queries.getFileWithContent, { fileId });

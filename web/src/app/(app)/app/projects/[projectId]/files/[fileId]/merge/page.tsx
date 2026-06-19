@@ -19,7 +19,7 @@ export default async function MergePage({
     <>
       <AppHeader title="Merge" />
       <main className="flex-1 p-6">
-        <MergeView projectId={projectId} fileId={parsedFileId} />
+        <MergeView projectId={parsedProjectId} fileId={parsedFileId} />
       </main>
     </>
   );

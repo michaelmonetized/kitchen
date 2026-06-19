@@ -26,6 +26,7 @@ import {
   type PickSide,
 } from "@/lib/merge/diffLinePick";
 import { encodeTextContent } from "@/lib/content";
+import { parseVersionId } from "@/lib/convex-id";
 import { getErrorMessage } from "@/lib/errors";
 
 const PICK_OPTIONS: PickSide[] = ["left", "right", "both", "skip"];
@@ -139,7 +140,7 @@ export function MergeView({
   projectId,
   fileId,
 }: {
-  projectId: string;
+  projectId: Id<"files">;
   fileId: Id<"files">;
 }) {
   const [leftVersionId, setLeftVersionId] = useState<string | undefined>();
@@ -155,10 +156,10 @@ export function MergeView({
   const context = useQuery(api.queries.getForkMergeContext, {
     fileId,
     leftVersionId: leftVersionId
-      ? (leftVersionId as Id<"versions">)
+      ? (parseVersionId(leftVersionId) ?? undefined)
       : undefined,
     rightVersionId: rightVersionId
-      ? (rightVersionId as Id<"versions">)
+      ? (parseVersionId(rightVersionId) ?? undefined)
       : undefined,
   });
 

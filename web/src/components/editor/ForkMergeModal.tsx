@@ -8,7 +8,7 @@ export function ForkMergeModal({
   fileId,
   onClose,
 }: {
-  projectId: string;
+  projectId: Id<"files">;
   fileId: Id<"files">;
   onClose: () => void;
 }) {

@@ -18,7 +18,7 @@ export default async function ProjectPage({
     <>
       <AppHeader title="Project" />
       <main className="flex-1 p-6">
-        <FileTree projectId={projectId} rootId={parsedProjectId} />
+        <FileTree projectId={parsedProjectId} />
       </main>
     </>
   );

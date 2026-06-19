@@ -28,7 +28,7 @@ function FileTreeNode({
   node,
   childrenByParent,
 }: {
-  projectId: string;
+  projectId: Id<"files">;
   node: TreeNode;
   childrenByParent: Map<Id<"files">, TreeNode[]>;
 }) {
@@ -80,21 +80,15 @@ function FileTreeNode({
   );
 }
 
-export function FileTree({
-  projectId,
-  rootId,
-}: {
-  projectId: string;
-  rootId: Id<"files">;
-}) {
-  const tree = useQuery(api.queries.listProjectTree, { projectId: rootId });
+export function FileTree({ projectId }: { projectId: Id<"files"> }) {
+  const tree = useQuery(api.queries.listProjectTree, { projectId });
 
   if (tree === undefined) {
     return <p className="text-sm text-stone-500">Loading tree…</p>;
   }
 
   const childrenByParent = buildChildrenMap(tree);
-  const roots = childrenByParent.get(rootId) ?? [];
+  const roots = childrenByParent.get(projectId) ?? [];
 
   return (
     <ul className="space-y-0.5">

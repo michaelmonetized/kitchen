@@ -10,3 +10,8 @@ export function parseFileId(raw: string) {
 export function parseProjectId(raw: string) {
   return parseFileId(raw);
 }
+
+export function parseVersionId(raw: string) {
+  if (!CONVEX_ID_RE.test(raw)) return null;
+  return raw as Id<"versions">;
+}
