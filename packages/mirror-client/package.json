@@ -1,0 +1,28 @@
+{
+  "name": "@kitchen/mirror-client",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "kitchen-mirror": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx watch src/index.ts start",
+    "start": "node dist/index.js start",
+    "login": "tsx src/index.ts login",
+    "smoke": "node scripts/roundtrip-smoke.mjs"
+  },
+  "dependencies": {
+    "@clerk/backend": "^2.6.0",
+    "@parcel/watcher": "^2.5.1",
+    "convex": "^1.25.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  }
+}

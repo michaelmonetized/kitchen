@@ -10,6 +10,8 @@
     "spike:pair": "npm run build && node scripts/spike-pair.mjs",
     "test": "npm run spike:pair",
     "dev:web": "npm run dev -w web",
+    "dev:mirror": "npm run dev -w @kitchen/mirror-client",
+    "mirror": "npm run start -w @kitchen/mirror-client",
     "build:web": "npm run build -w web",
     "loop": "bash loop.sh",
     "loop:status": "node scripts/task-loop.mjs status",
