@@ -114,10 +114,27 @@ export default capsule({
       if (project.ownerId !== ctx.auth.userId && props["role:public"] !== "read") return null;
       return project;
     }),
-    /** Count files in a project for display */
     countProjectFiles: query((ctx, projectId: string) => {
       if (!projectId) return 0;
       return ctx.db.files.where("parentId", projectId).all().length;
+    }),
+    listProjectTree: query((ctx, projectId: string) => {
+      if (!projectId) return [];
+      const project = ctx.db.files.get(projectId);
+      if (!project || project.type !== "dir") return [];
+      const props = project.properties ? JSON.parse(project.properties) : {};
+      if (project.ownerId !== ctx.auth.userId && props["role:public"] !== "read") return [];
+      
+      const nodes: any[] = [];
+      function walk(parentId: string) {
+        const children = ctx.db.files.where("parentId", parentId).all();
+        for (const child of children) {
+          nodes.push(child);
+          if (child.type === "dir") walk(child.id);
+        }
+      }
+      walk(projectId);
+      return nodes;
     })
   },
 
