@@ -232,7 +232,7 @@ function OnboardingPage({ onComplete }: { onComplete: () => void }) {
 // ----- Pages -----
 
 function ProjectList() {
-  const projects = useQuery<FileDoc[]>("listProjects");
+  const projects = useQuery<(FileDoc & { ownerUsername?: string })[]>("listProjects");
   const currentUser = useQuery<UserDoc | null>("getCurrentUser");
   const createProject = useMutation<[name: string], any>("createProject");
   const deleteProject = useMutation<[projectId: string], void>("deleteProject");
@@ -322,14 +322,14 @@ function ProjectList() {
   );
 }
 
-function ProjectGrid({ projects, onDelete }: { projects: FileDoc[]; onDelete: (p: FileDoc) => void }) {
+function ProjectGrid({ projects, onDelete }: { projects: (FileDoc & { ownerUsername?: string })[]; onDelete: (p: FileDoc) => void }) {
   const currentUser = useQuery<UserDoc | null>("getCurrentUser");
   const auth = useAuth();
 
   return (
     <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 list-none p-0 m-0">
       {projects.map((proj) => {
-        const ownerName = currentUser?.username || "_";
+        const ownerName = proj.ownerUsername || currentUser?.username || "_";
         const props = proj.properties ? JSON.parse(proj.properties) : {};
         const isPublic = props["role:public"] === "read";
         const isOwner = proj.ownerId === auth.userId;
@@ -364,7 +364,7 @@ function ProjectGrid({ projects, onDelete }: { projects: FileDoc[]; onDelete: (p
 
 function ProjectExplorerRoute() {
   const { owner, project } = useParams<{ owner: string; project: string }>();
-  return <ProjectExplorer ownerUsername={owner} projectName={project} />;
+  return <ProjectExplorer ownerUsername={decodeURIComponent(owner ?? "")} projectName={decodeURIComponent(project ?? "")} />;
 }
 
 function ProjectExplorer({ ownerUsername, projectName }: { ownerUsername: string; projectName: string }) {
@@ -574,7 +574,7 @@ function ProjectExplorer({ ownerUsername, projectName }: { ownerUsername: string
 
 function FileViewerRoute() {
   const { owner, project, file } = useParams<{ owner: string; project: string; file: string }>();
-  return <FileViewerPage ownerUsername={owner} projectName={project} fileName={file} />;
+  return <FileViewerPage ownerUsername={decodeURIComponent(owner ?? "")} projectName={decodeURIComponent(project ?? "")} fileName={decodeURIComponent(file ?? "")} />;
 }
 
 function FileViewerPage({ ownerUsername, projectName, fileName }: { ownerUsername: string; projectName: string; fileName: string }) {
@@ -839,7 +839,7 @@ function FileViewerPage({ ownerUsername, projectName, fileName }: { ownerUsernam
 
 function MergeViewRoute() {
   const { owner, project, file } = useParams<{ owner: string; project: string; file: string }>();
-  return <MergeViewPage ownerUsername={owner} projectName={project} fileName={file} />;
+  return <MergeViewPage ownerUsername={decodeURIComponent(owner ?? "")} projectName={decodeURIComponent(project ?? "")} fileName={decodeURIComponent(file ?? "")} />;
 }
 
 function MergeViewPage({ ownerUsername, projectName, fileName }: { ownerUsername: string; projectName: string; fileName: string }) {

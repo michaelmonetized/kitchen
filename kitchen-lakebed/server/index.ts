@@ -48,6 +48,10 @@ export default capsule({
         .filter(f => {
           const props = f.properties ? JSON.parse(f.properties) : {};
           return f.type === "dir" && props.kind === "project" && (f.ownerId === ctx.auth.userId || props["role:public"] === "read");
+        })
+        .map(f => {
+          const owner = ctx.db.users.all().find(u => u.clerkId === f.ownerId);
+          return { ...f, ownerUsername: owner?.username };
         });
     }),
     listTree: query((ctx, parentId: string) => {
