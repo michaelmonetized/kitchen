@@ -22,6 +22,9 @@ Commenters **will** find these.
 | **Pierre merge dependency** | External diff/merge primitives | "Human line-pick via Pierre; auto-merge explicitly out of scope" |
 | **No git import** | VISION out of scope | "First-principles store; import may come later" |
 | **Offline not shipped yet** | FAQ may lag ADR 0006 | Policy locked (Notion-style); task 020 — don't claim plane mode until verify |
+| **Project parent = org in code** | `web/convex` still org-parent | ADR 0010 email account + ~/Projects top-level — task 024 |
+| **Mirror expects org subpaths** | May not scan top-level ~/Projects only | Task 024 — top-level = project |
+| **No /onboarding yet** | Clerk → app directly | Task 026 — username + work-email warning |
 | **50 MB soft cap** | Per version row | "Same model for binaries; scale testing not done" |
 | **Codename Kitchen** | Working title | One disclaimer per post; don't apologize twice |
 

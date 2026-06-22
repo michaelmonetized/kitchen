@@ -37,7 +37,7 @@ const mirrorRoot =
   process.env.MIRROR_ROOT ??
   process.env.KITCHEN_MIRROR_ROOT ??
   path.join(tmpdir(), "kitchen-mirror-smoke");
-const authFile = path.join(homedir(), ".kitchen", "mirror-auth.json");
+const authFile = path.join(homedir(), ".kitchen", "auth.json");
 const timeoutMs = Number(process.env.MIRROR_SMOKE_TIMEOUT_MS ?? 45_000);
 
 function fail(msg) {

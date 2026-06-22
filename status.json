@@ -1,0 +1,191 @@
+{
+  "series": "product",
+  "tasksDir": "tasks",
+  "complete": false,
+  "iteration": 264,
+  "nextTask": {
+    "id": "021-kitchen-cli-changes",
+    "title": "Kitchen CLI — `auth` + `changes`",
+    "pending": [
+      "`npx kitchen auth` — interactive browser OAuth (Clerk); writes `~/.kitchen/auth.json`",
+      "Shared auth file with mirror daemon (replace or alias `mirror-auth.json`)",
+      "Non-interactive (no TTY / agent shell): exit 1, stderr *\"Run \\`npx kitchen auth\\` in your terminal\"* — kill subprocess; no in-shell login",
+      "**No** `--paste-token` in v0 (security — ADR 0008)",
+      "`kitchen changes <path> [--since <instant>] [--limit N]`",
+      "`--since` Temporal-compatible ISO 8601; filter `_creationTime`",
+      "Path → `fileId` via mirror map or `listProjectTree`",
+      "Private path: require valid `~/.kitchen/auth.json`",
+      "Public path (`role:public: read`): anonymous read — task 023",
+      "Default output: JSON `{ id, creationTime, authorUserId, parentVersionIds }`",
+      "Package `packages/kitchen-cli` (`@kitchen/cli`, bin `kitchen`)",
+      "Update `templates/project-kitchen-docs/AGENTS.md`, `docs/clients/agent-discovery.md`, README"
+    ]
+  },
+  "tasks": [
+    {
+      "id": "001-web-scaffold",
+      "title": "Web Scaffold",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "002-convex-schema",
+      "title": "Convex Schema",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "003-auth-clerk",
+      "title": "Auth (Clerk)",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "004-authz-layer",
+      "title": "Authorization Layer",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "005-core-mutations",
+      "title": "Core Mutations",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "006-core-queries",
+      "title": "Core Queries",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "007-web-shell",
+      "title": "Web App Shell",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "008-project-browser",
+      "title": "Project Browser",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "009-file-editor",
+      "title": "File Editor",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "010-fork-merge",
+      "title": "Fork & Merge UI",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "011-org-admin",
+      "title": "Org Admin",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "012-collab-relay",
+      "title": "Collab Relay (Web)",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "013-landing-marketing",
+      "title": "Landing & Marketing",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "014-ship-product",
+      "title": "Ship Product",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "015-mirror-client",
+      "title": "Mirror Client",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "016-launch-gate-verify",
+      "title": "Launch Gate Verify",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "017-continue-016-launch-gate-verify",
+      "title": "continue 016 launch gate verify",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "017-mirror-grill-gaps",
+      "title": "Mirror Grill Gaps",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "018-web-diff-blame-surface",
+      "title": "Web Diff / Blame Surface (No Textarea)",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "019-agent-discovery-kit",
+      "title": "Agent Discovery Kit (`.kitchen/docs`)",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "020-offline-save-queue",
+      "title": "Offline — queue + tree reconcile (Q12 = C)",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "021-kitchen-cli-changes",
+      "title": "Kitchen CLI — `auth` + `changes`",
+      "done": false,
+      "pendingCount": 12
+    },
+    {
+      "id": "022-continue-018-web-diff-blame-surface",
+      "title": "continue 018 web diff blame surface",
+      "done": false,
+      "pendingCount": 3
+    },
+    {
+      "id": "023-public-acl",
+      "title": "Public ACL — FOSS + per-file override",
+      "done": false,
+      "pendingCount": 9
+    },
+    {
+      "id": "024-account-parent-projects",
+      "title": "Email account + ~/Projects top-level projects",
+      "done": false,
+      "pendingCount": 13
+    },
+    {
+      "id": "025-foss-fork-copy",
+      "title": "FOSS fork — copy public tree to your account",
+      "done": false,
+      "pendingCount": 6
+    },
+    {
+      "id": "026-username-onboarding",
+      "title": "Username onboarding + account + 301 redirects",
+      "done": false,
+      "pendingCount": 7
+    }
+  ],
+  "logFile": "/Users/michael/Projects/kitchen/.kitchen-loop/loop.log",
+  "stateFile": "/Users/michael/Projects/kitchen/.kitchen-loop/loop.state.json",
+  "completionPromise": "KITCHEN_SHIP_COMPLETE"
+}

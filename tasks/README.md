@@ -33,7 +33,11 @@ Sequential tasks for building the **marketable web product** in `./web`. Each fi
 | 018 | [web-diff-blame-surface](./018-web-diff-blame-surface.md) | Textarea violates vision | Pierre blame/history/rollback web shell |
 | 019 | [agent-discovery-kit](./019-agent-discovery-kit.md) | No product AI | `.kitchen/docs/AGENTS.md` per project |
 | 020 | [offline-save-queue](./020-offline-save-queue.md) | Plane / lid-close | Notion-style queue + reconnect flush |
-| 021 | [kitchen-cli-changes](./021-kitchen-cli-changes.md) | Agent primitive | `npx kitchen changes path [--since instant]` |
+| 021 | [kitchen-cli-changes](./021-kitchen-cli-changes.md) | Agent primitive | `kitchen auth` + `kitchen changes path [--since instant]` |
+| 023 | [public-acl](./023-public-acl.md) | Discovery / hiring | `role:public: read` anonymous browse |
+| 024 | [account-parent-projects](./024-account-parent-projects.md) | Q13–Q14 ownership | Account parent; org property; audit trail |
+| 025 | [foss-fork-copy](./025-foss-fork-copy.md) | Social fork | Copy public tree; no PR |
+| 026 | [username-onboarding](./026-username-onboarding.md) | Q17 identity | `/onboarding`, `/account/`, 301 redirects |
 
 Source: [`docs/gtm/grilling/02-launch-gate.md`](../docs/gtm/grilling/02-launch-gate.md), [`known-landmines.md`](../docs/gtm/grilling/known-landmines.md).
 

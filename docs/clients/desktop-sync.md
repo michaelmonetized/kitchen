@@ -18,15 +18,16 @@ From the source concept:
 | macOS / Linux | `$HOME/Projects/` |
 | Windows | `%USERPROFILE%\Projects\` |
 
-Each **project** maps to one top-level directory:
+Each **top-level** entry in `~/Projects` is a **project** ([ADR 0010](../adr/0010-project-ownership-and-scope.md)) — usually a directory; a single top-level file may also be a project root:
 
 ```
 $HOME/Projects/
-├── acme-web/
-└── acme-mobile/
+├── flakebed/        ← project
+├── michael-notes/   ← project
+└── sketch.ts        ← project (optional single-file root)
 ```
 
-Nested folders mirror the File `parentId` chain under the project root.
+Run the daemon after `npx kitchen auth` (Clerk JWT). New top-level folders sync to Convex with **`owner: your email`** from the session. Nested paths inside a project mirror the File `parentId` chain under that project root — not separate projects.
 
 ## Runtime architecture
 
@@ -171,19 +172,17 @@ No clone step. No remote URL.
 
 When connectivity drops ([ADR 0006](../adr/0006-offline-save-until-reconnect.md)):
 
-1. **Disk** — editor saves proceed; mirror path holds latest local bytes
-2. **Queue** — FS watcher → durable insert queue at `~/.kitchen/queue/` (path, content hash, timestamp per entry; survives daemon restart)
-3. **UI** — tray/status: `Synced` / `Offline (N queued)` / `Syncing…` (written to `~/.kitchen/status.json` and process title)
-4. **Reconnect** — flush queue FIFO → Convex `versions.insert` per entry
-5. **Conflict** — if cloud head moved while offline → `forked: true` → Fork policy A (author bytes on disk) + web merge
-
-Tree metadata moves (`mv`, `rm`) while offline are **content-only in v0** — queued inserts cover file bytes, not `files.updateMetadata`.
+1. **Disk** — local tree **free**: saves, `mv`, `rm`, `mkdir` all proceed (grill Q12 = C)
+2. **Queue** — content inserts + tree intent recorded durably at `~/.kitchen/queue/`
+3. **UI** — tray/status: `Synced` / `Offline (N queued)` / `Reconciling…`
+4. **Reconnect** — flush content queue FIFO → `versions.insert`; then **full tree diff** disk ↔ Convex → metadata / tombstones
+5. **Conflict** — remote moved while offline → `forked: true` → Fork policy A + web merge
 
 ## Failure modes
 
 | Failure | Behavior |
 |---------|----------|
-| WebSocket disconnect | Queue local inserts; reconnect, resubscribe, flush queue, diff missing versions |
+| WebSocket disconnect | Queue + local tree free; reconnect → flush inserts + tree reconcile |
 | Local write while offline | Queue inserts (Notion-on-phone); flush on reconnect; fork → merge if remote moved ([ADR 0006](../adr/0006-offline-save-until-reconnect.md), task 020) |
 | Fork detected | Tray notification + in-app Pierre Merge link |
 | Permission revoked mid-session | Stop writes, grey out mirror paths |

@@ -8,21 +8,27 @@ import { api } from "../../../convex/_generated/api";
 export function OnboardingGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const orgs = useQuery(api.admin.listOrgsForUser, {});
+  const account = useQuery(api.accounts.getCurrentAccount, {});
 
   const isOnboarding = pathname === "/app/onboarding";
+  const isAccount = pathname === "/app/account";
 
   useEffect(() => {
-    if (orgs === undefined) return;
-    if (orgs.length === 0 && !isOnboarding) {
+    if (account === undefined) return;
+    if (!account && !isOnboarding) {
       router.replace("/app/onboarding");
+      return;
     }
-    if (orgs.length > 0 && isOnboarding) {
+    if (account && !account.user.onboardingComplete && !isOnboarding) {
+      router.replace("/app/onboarding");
+      return;
+    }
+    if (account?.user.onboardingComplete && isOnboarding) {
       router.replace("/app");
     }
-  }, [orgs, isOnboarding, router]);
+  }, [account, isOnboarding, isAccount, router]);
 
-  if (orgs === undefined) {
+  if (account === undefined) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-muted">Loading…</p>
@@ -30,7 +36,7 @@ export function OnboardingGate({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (orgs.length === 0 && !isOnboarding) {
+  if ((!account || !account.user.onboardingComplete) && !isOnboarding) {
     return (
       <div className="flex flex-1 items-center justify-center">
         <p className="text-muted">Redirecting to onboarding…</p>

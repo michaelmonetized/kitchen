@@ -1,0 +1,23 @@
+{
+  "name": "@kitchen/cli",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "kitchen": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "verify": "node scripts/verify.mjs"
+  },
+  "dependencies": {
+    "@kitchen/mirror-client": "*",
+    "convex": "^1.25.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.21",
+    "typescript": "^5.8.3"
+  }
+}

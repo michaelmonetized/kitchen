@@ -183,7 +183,7 @@ IF "just use API key"
 
 **Recommended reply:**
 
-> Daemon uses Clerk OAuth (browser handoff once), stores refresh token in **macOS Keychain**, Convex client uses Clerk JWT per request. Threat model: single-user workstation — same as Dropbox/Google Drive desktop. Enterprise hardening TBD. Happy to document flow in mirror README.
+> Human runs `npx kitchen auth` once (browser OAuth) → `~/.kitchen/auth.json`; mirror daemon reads the same file. Keychain migration TBD. Threat model: single-user workstation — same as Dropbox. Agents can't login — you auth, they reuse the file ([ADR 0008](../../adr/0008-cli-auth-fail-closed.md)).
 
 ---
 
@@ -212,18 +212,19 @@ IF "just use API key"
 **Simulated comment:**
 > I edited on the plane. What happens?
 
-**Model (locked — grill Q8, 2026-06-18):**
+**Model (locked — grill Q8 + Q12=C, 2026-06-18):**
 
-Same as **Notion on your phone**:
+Same as **Notion on your phone** for content; **local tree free** offline:
 
 ```
 Offline
-  → local editor saves normally; bytes on disk
-  → daemon queues version inserts (durable)
+  → saves, mv, rm, mkdir on disk (unrestricted)
+  → daemon queues content inserts + records tree intent
 
 Reconnect
-  → flush queue → versions.insert in order
-  → IF remote advanced while offline → forked: true → merge in web (Fork A on disk)
+  → flush content queue → versions.insert
+  → full tree diff disk ↔ Convex → metadata / tombstones
+  → IF remote advanced → forked → merge in web (Fork A)
 ```
 
 **Tree:**
@@ -243,6 +244,184 @@ IF "launch day — is it shipped?"
 
 ---
 
+## E10 — Agent runs `kitchen changes` without auth
+
+**Simulated comment:**
+> My Cursor agent tried to read file history and got exit 1. Broken DX.
+
+**Model (locked — grill Q10, 2026-06-18):**
+
+```
+Private path + no ~/.kitchen/auth.json
+  → kitchen changes exits non-zero
+  → stderr: "Run npx kitchen auth in your terminal"
+  → agent cannot browser-login → relay to human
+
+Public path (role:public: read)
+  → anonymous read OK
+
+CI
+  → version history not needed — no auth path
+```
+
+**Considered:** `--paste-token` — rejected v0 (phishing/leak risk).
+
+**Recommended reply:**
+
+> Agents can't browser-login — by design. Run `npx kitchen auth` once on your machine; your harness reuses `~/.kitchen/auth.json`. Private history is ACL-gated. Public showcase projects use `role:public: read`. CI doesn't need version history. Paste-token auth is intentionally not shipped.
+
+See [ADR 0008](../../adr/0008-cli-auth-fail-closed.md), [ADR 0009](../../adr/0009-public-acl-discovery.md).
+
+---
+
+## E14 — "I'll send a PR with my fork"
+
+**Simulated PH comment:**
+> Fork flakebed, fix the bug, open PR. Where's the PR button?
+
+**Model (locked — ADR 0011):**
+
+```
+FOSS fork → copy public-visible files to YOUR account project
+You own inserts from snapshot forward
+No cross-account PR — communicate with owner/org, get invited, Pierre merge
+```
+
+**Recommended reply:**
+
+> Kitchen isn't GitHub — fork means copy public code into your `$HOME/Projects` under your account and own it from that version forward. To land changes upstream, talk to the org, get on the team, merge by line-pick. No PR path by design.
+
+---
+
+## E18 — "My public URL is gmail.com-mostlyalice"
+
+**Simulated PH comment:**
+> I published FOSS and the link is `kitchen.sync/gmail.com-mostlyalice/flakebed`. Embarrassing.
+
+**Model (locked — grill Q18 = C, 2026-06-18):**
+
+```
+Onboarding may submit ugly placeholder unchanged
+FOSS works at that URL immediately
+Rename at /account/ → 301 old → new (VCS link hygiene)
+```
+
+**Recommended reply:**
+
+> You can ship public with the default slug — we nudge you to rename, not block you. Change username at `/account/` anytime; old `gmail.com-mostlyalice/…` links 301 to your new handle. We're VCS people — links shouldn't die when you fix your name.
+
+---
+
+## E17 — "I used my work email and got laid off"
+
+**Simulated HN comment:**
+> Locked out after leaving company — email is on the account and support won't change it.
+
+**Model (locked — grill Q17, 2026-06-18):**
+
+```
+Email IMMUTABLE after sign-up
+Username changeable at /account/
+Onboarding warns: don't use work email unless you must
+```
+
+**Recommended reply:**
+
+> By design — email is your account key, like early GitHub. We warn at sign-up: use a personal email you'll keep. Username is what you share (`you/project`); change username anytime with 301s for old links. We can't move FOSS history to a new email without breaking auth.
+
+---
+
+## E16 — "Someone else took the name flakebed"
+
+**Simulated comment:**
+> Global namespace? I can't publish `flakebed` because it exists?
+
+**Model (locked — grill Q16 = A, 2026-06-18):**
+
+```
+Project name unique per account (parentId + name)
+Cross-account collision OK
+Share URL: /<username>/<project>  e.g. mostlyalice/flakebed, bobactually/flakebed
+```
+
+**Recommended reply:**
+
+> Names are per account, not global. Your `flakebed` is `yourusername/flakebed` on the web. Two FOSS projects can both be called flakebed under different usernames — like GitHub `user/repo`, without git.
+
+See [ADR 0013](../../adr/0013-project-namespace-and-urls.md).
+
+---
+
+## E15 — "Where is my account folder?"
+
+**Simulated comment:**
+> I expected `~/Projects/alice@email.com/projects/…`. Why flat?
+
+**Model (locked — grill Q15, 2026-06-18):**
+
+```
+Account = your email (Clerk JWT)
+~/Projects/<anything-top-level>/ = project
+owner property = session email on push
+No ~/Projects/<account>/ nesting
+```
+
+**Recommended reply:**
+
+> Your account is your email — sign in via daemon or `npx kitchen auth`. Anything directly in `~/Projects` is a project we sync with `owner` set to you. Flat on disk, account parent in the cloud. Nested folders inside a project are source files, not separate projects.
+
+---
+
+## E12 — "Is everything public if I use Kitchen?"
+
+**Simulated comment:**
+> So all my code is on the internet?
+
+**Model (locked — grill Q13–Q14, 2026-06-18):**
+
+```
+Project parentId = originating account (never changes)
+owner: email on project row (transferrable)
+
+Default: role:user (private)
+→ org: add org:<name> property, write role → org
+→ public: add role:public: read (FOSS)
+
+All transitions audited forever (ADR 0012)
+FOSS fork: copy to your ~/Projects, own forward — no PR (ADR 0011)
+```
+
+**Recommended reply:**
+
+> Projects parent to your account, not org. Default is private (`user`). Sharing with a team adds an `org:` property and moves write to `role:org` — parent doesn't change, you still own the lineage. Public is opt-in FOSS. You can fork public code into your account and own it from that version forward — there's no PR button; you join the org and merge like any other fork.
+
+See [ADR 0010](../../adr/0010-project-ownership-and-scope.md).
+
+---
+
+## E11 — Public FOSS project with secret `.env`
+
+**Simulated comment:**
+> You say public showcase. So my API keys in `.env` are visible to the internet?
+
+**Model (locked — grill Q11, 2026-06-18):**
+
+```
+Project role:public: read  → FOSS (tree + content + full version history)
+
+Child .env:
+  { "role:public": "deny", "role:editor": "write" }
+  → overrides parent
+  → anonymous tree walk OMITS .env (not listed, not readable)
+  → editors/contributors with role see it normally
+```
+
+**Recommended reply:**
+
+> Public project means FOSS-shaped openness on paths you leave public — full history included. Per-file ACL overrides parent all the way down: mark `.env` contributor-only with `role:public: deny` and it won't appear in the public tree at all. Same pattern as a public repo with a private submodule you never publish — except it's property-based on the File row.
+
+---
+
 ## Task impact
 
 | Edge case | Task | Action |
@@ -254,4 +433,9 @@ IF "launch day — is it shipped?"
 | E5 Soft delete `deleted: true` | 015 / 017 | Tombstone A; ADR 0003; query filters |
 | E6 Keychain auth | 015 | Document in README |
 | E7 macOS-only | GTM | Soften "any editor" → "macOS mirror beta" until port |
-| E8 Offline (Notion-style) | 020 | Queue + reconnect flush; ADR 0006 |
+| E8 Offline (Notion + tree C) | 020 | Queue + tree reconcile; ADR 0006 |
+| E10 Agent auth fail-closed | 021 | `kitchen auth`; no paste-token; ADR 0008 |
+| E10b Public ACL | 023 | `role:public: read`; ADR 0009 |
+| E11 FOSS + file override | 023 | `role:public: deny`; tree omits secrets |
+| E12 Project scope | 024 | account parent; `user`/`org`/`public`; ADR 0010 |
+| E14 FOSS fork no PR | 025 | copy to account; ADR 0011 |

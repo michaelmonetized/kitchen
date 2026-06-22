@@ -1,39 +1,46 @@
-# Task 020: Offline Save Queue (Notion-on-phone)
+# Task 020: Offline — queue + tree reconcile (Q12 = C)
 
-**Depends on:** 015-mirror-client, 017-mirror-grill-gaps (fork A)  
-**Grill Q8:** Offline = save until reconnect, then merge  
+**Depends on:** 015-mirror-client, 017-mirror-grill-gaps (fork A, tree diff)  
+**Grill Q8 + Q12:** Notion-on-phone content; **local tree free**; full tree diff on reconnect  
 **ADR:** [`0006-offline-save-until-reconnect.md`](../docs/adr/0006-offline-save-until-reconnect.md)
 
 ## Goal
 
-When WebSocket to Convex drops, the mirror **does not block** local editor saves. Queued inserts flush on reconnect; conflicts become forks (merge in web).
+Offline: editor + filesystem unrestricted on disk. Reconnect: flush content queue + reconcile tree with Convex.
 
 ## Done criteria
 
-- [x] Durable local insert queue (survives daemon restart) under `~/.kitchen/queue/` or equivalent
-- [x] Offline: FS watcher → queue entry (path, bytes hash, timestamp); disk write proceeds
-- [x] Reconnect: flush queue in FIFO order → `versions.insert` per entry
-- [x] Post-flush: if `forked`, apply Fork policy A (author bytes on disk; notify merge)
-- [x] Tray state: `Synced` / `Offline (N queued)` / `Syncing…`
-- [x] `docs/clients/desktop-sync.md` + FAQ offline section aligned with ADR 0006
-- [x] Manual verify: disconnect network → edit file → reconnect → version in Convex; optional fork if remote also edited
+### Content queue
+
+- [x] Durable queue under `~/.kitchen/queue/` (survives daemon restart)
+- [x] Offline saves → queue + disk write
+- [x] Reconnect → FIFO `versions.insert` flush
+- [x] Post-flush fork → Fork policy A + merge notify
+
+### Tree reconcile (Q12 = C)
+
+- [x] Offline `mv` / `rm` / `mkdir` allowed on disk; recorded in local tree state
+- [x] Reconnect → diff disk tree vs Convex tree → `files.updateMetadata` / `files.insert` / `markDeleted`
+- [x] Echo suppression during reconcile
+- [x] Tray: `Synced` / `Offline (N queued)` / `Reconciling…`
+
+### Docs
+
+- [x] `desktop-sync.md` + FAQ aligned with ADR 0006
 
 ## Out of scope
 
-- CRDT / automatic merge on reconnect
-- Offline tree moves (parentId/name) — v0 may queue content-only; document limitation
+- CRDT / auto-merge
+- Ordering guarantees across multi-user offline tree edits (fork + human resolution)
 
 ## Verify
 
 ```bash
-# With mirror running, block Convex (or airplane mode):
-# 1. Edit tracked file, save in editor
-# 2. Tray shows queued count
-# 3. Restore network
-# 4. npx kitchen changes path/to/file --since <before-edit>
-#    → new version row appears
+# Offline: edit file + mv path; reconnect
+# → version insert + metadata patch in Convex
+npx kitchen changes path/to/file --since <before>
 ```
 
 ## References
 
-- [`docs/gtm/grilling/03-mirror-edge-cases.md`](../docs/gtm/grilling/03-mirror-edge-cases.md) E8
+- [`03-mirror-edge-cases.md`](../docs/gtm/grilling/03-mirror-edge-cases.md) E8

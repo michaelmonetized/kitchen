@@ -1,4 +1,4 @@
-import { access, copyFile, mkdir, writeFile } from "node:fs/promises";
+import { access, copyFile, mkdir, readFile, writeFile } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -13,6 +13,7 @@ const AGENTS_TEMPLATE = path.join(
 export async function ensureAgentDiscoveryKit(
   projectDir: string,
   convexUrl: string,
+  projectId?: string,
 ): Promise<void> {
   const kitchenDir = path.join(projectDir, ".kitchen");
   const docsDir = path.join(kitchenDir, "docs");
@@ -26,9 +27,21 @@ export async function ensureAgentDiscoveryKit(
 
   const convexJsonPath = path.join(kitchenDir, "convex.json");
   if (!(await pathExists(convexJsonPath))) {
-    const payload = JSON.stringify({ deploymentUrl: convexUrl }, null, 2) + "\n";
-    await writeFile(convexJsonPath, payload, "utf8");
+    const payload: Record<string, string> = { deploymentUrl: convexUrl };
+    if (projectId) payload.projectId = projectId;
+    await writeFile(convexJsonPath, JSON.stringify(payload, null, 2) + "\n", "utf8");
     console.log(`cloud→disk materialize ${convexJsonPath}`);
+  } else if (projectId) {
+    try {
+      const raw = await readFile(convexJsonPath, "utf8");
+      const existing = JSON.parse(raw) as Record<string, string>;
+      if (!existing.projectId) {
+        existing.projectId = projectId;
+        await writeFile(convexJsonPath, JSON.stringify(existing, null, 2) + "\n", "utf8");
+      }
+    } catch {
+      // preserve user-edited convex.json on parse errors
+    }
   }
 }
 

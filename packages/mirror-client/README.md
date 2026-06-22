@@ -36,7 +36,7 @@ Optional:
 
 ## Auth & token strategy
 
-1. **`kitchen-mirror login`** opens a browser sign-in page on `127.0.0.1`, mounts Clerk, and POSTs the resulting **Clerk session ID** to `~/.kitchen/mirror-auth.json`.
+1. **`kitchen-mirror login`** (or **`npx kitchen auth`**) opens a browser sign-in page on `127.0.0.1`, mounts Clerk, and POSTs the resulting **Clerk session ID** to `~/.kitchen/auth.json`.
 2. **`kitchen-mirror start`** loads that session ID on every run (survives daemon restart).
 3. The daemon uses **`CLERK_SECRET_KEY`** + `@clerk/backend` `sessions.getToken(sessionId, "convex")` to mint a short-lived Convex JWT, refreshed every ~50 minutes.
 

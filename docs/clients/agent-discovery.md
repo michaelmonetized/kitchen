@@ -36,7 +36,7 @@ my-project/
 
 The mirror daemon materializes `.kitchen/docs/AGENTS.md` and `.kitchen/convex.json` on first project sync (**create-if-missing** — user edits to `AGENTS.md` are preserved). Templates: `packages/mirror-client/templates/`.
 
-Auth: `~/.kitchen/auth.json` via `npx kitchen auth` (human, interactive). Mirror daemon shares the same file. **Agents** without a token on **private** paths: CLI exits non-zero — tell the user to run `npx kitchen auth`. **Public** projects (`role:public: read`) allow anonymous `kitchen changes`.
+Auth: `~/.kitchen/auth.json` via `npx kitchen auth` (human, interactive). Mirror daemon shares the same file. **Agents** without a token on **private** paths: CLI exits non-zero — tell the user to run `npx kitchen auth`. Projects are unique **per account** — share URLs are `/<username>/<project>` ([ADR 0013](../adr/0013-project-namespace-and-urls.md)). Scope on project row: **`user`** / **`org`** / **`public`**. Only **`public`** allows anonymous `kitchen changes` on visible paths.
 
 ## Typical agent flow
 

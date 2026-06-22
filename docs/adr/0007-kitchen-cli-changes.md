@@ -15,7 +15,7 @@ npx kitchen changes <path/to/file> [--since <instant>]
 
 ## Behavior
 
-1. Load auth from `~/.kitchen/mirror-auth.json` (same as mirror daemon)
+1. If path is not public-read: load auth from `~/.kitchen/auth.json` (`npx kitchen auth`); else anonymous ([ADR 0008](./0008-cli-auth-fail-closed.md), [0009](./0009-public-acl-discovery.md))
 2. Resolve `path` → `fileId` via project tree
 3. Query `versions` for that `fileId`, filtered by `--since` on `_creationTime`
 4. Print structured output (default JSON: version id, time, `authorUserId`, parent heads)
@@ -24,4 +24,4 @@ Harnesses already know CLI + VCS; this is the **canonical** primitive named in `
 
 **Considered:** Kitchen MCP server — rejected; duplicates harness + CLI ([ADR 0005](./0005-no-product-ai-agent-discovery.md)).
 
-**Consequences:** Task [`021-kitchen-cli-changes.md`](../../tasks/021-kitchen-cli-changes.md). Package `@kitchen/cli` (bin `kitchen`). Subcommand `changes` is v0; room for `kitchen status`, `kitchen login` later.
+**Consequences:** Task [`021-kitchen-cli-changes.md`](../../tasks/021-kitchen-cli-changes.md). Package `@kitchen/cli` (bin `kitchen`). Subcommands: `auth`, `changes`.

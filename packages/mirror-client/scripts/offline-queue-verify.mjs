@@ -18,7 +18,7 @@ const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL ?? process.env.CONVEX_URL;
 const mirrorRoot =
   process.env.KITCHEN_MIRROR_ROOT ?? path.join(homedir(), "Projects");
 const kitchenDir = path.join(homedir(), ".kitchen");
-const authFile = path.join(kitchenDir, "mirror-auth.json");
+const authFile = path.join(kitchenDir, "auth.json");
 const queueDir = path.join(kitchenDir, "queue");
 const statusFile = path.join(kitchenDir, "status.json");
 

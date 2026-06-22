@@ -1,7 +1,8 @@
 import { query } from "./_generated/server";
 import type { QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
-import type { Id } from "./_generated/dataModel";
+import type { Doc, Id } from "./_generated/dataModel";
+import { isLegacyOrgFile } from "./lib/account";
 import { canRead, canWrite } from "./lib/authz";
 import { computeBlame } from "./lib/blame";
 import { isDeleted } from "./lib/deleted";
@@ -24,6 +25,33 @@ export const projectsForUser = query({
   args: {},
   handler: async (ctx) => {
     const user = await requireUser(ctx);
+    const projects: {
+      org: { _id: Id<"files">; name: string } | null;
+      account: { _id: Id<"files">; name: string } | null;
+      project: Doc<"files">;
+      mirrorName: string;
+    }[] = [];
+
+    if (user.accountFileId) {
+      const account = await ctx.db.get(user.accountFileId);
+      if (account) {
+        const children = await ctx.db
+          .query("files")
+          .withIndex("by_parent", (q) => q.eq("parentId", account._id))
+          .collect();
+        for (const child of children) {
+          if (child.type !== "dir" || isDeleted(child.properties)) continue;
+          if (!(await canRead(ctx, user._id, child._id))) continue;
+          projects.push({
+            org: null,
+            account: { _id: account._id, name: account.name },
+            project: child,
+            mirrorName: child.name,
+          });
+        }
+      }
+    }
+
     const assignments = await ctx.db
       .query("user_roles")
       .withIndex("by_user", (q) => q.eq("userId", user._id))
@@ -35,22 +63,28 @@ export const projectsForUser = query({
       if (role) orgIds.add(role.orgFileId);
     }
 
-    const projects = [];
     for (const orgId of orgIds) {
       const org = await ctx.db.get(orgId);
-      if (!org) continue;
+      if (!org || !isLegacyOrgFile(org)) continue;
 
       const children = await ctx.db
         .query("files")
         .withIndex("by_parent", (q) => q.eq("parentId", org._id))
         .collect();
       for (const child of children) {
-        if (child.type === "dir" && (await canRead(ctx, user._id, child._id))) {
-          projects.push({ org, project: child });
-        }
+        if (child.type !== "dir" || isDeleted(child.properties)) continue;
+        if (!(await canRead(ctx, user._id, child._id))) continue;
+        if (projects.some((p) => p.project._id === child._id)) continue;
+        projects.push({
+          org: { _id: org._id, name: org.name },
+          account: null,
+          project: child,
+          mirrorName: child.name,
+        });
       }
     }
-    return projects;
+
+    return projects.sort((a, b) => a.mirrorName.localeCompare(b.mirrorName));
   },
 });
 

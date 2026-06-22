@@ -45,8 +45,36 @@ _Avoid_: Commit author, file owner (as blame source)
 _Avoid_: Kitchen AI, summarize feature, copilot (as product)
 
 **Kitchen CLI**:
-`npx kitchen changes <path> [--since <instant>]` — path-resolved version history using daemon auth. Canonical agent primitive ([ADR 0007](./docs/adr/0007-kitchen-cli-changes.md)).
-_Avoid_: Kitchen MCP, in-app summarize
+`npx kitchen auth` (interactive human login → `~/.kitchen/auth.json`); `npx kitchen changes <path> [--since <instant>]` — version history by path. Agents on private paths fail closed without token ([ADR 0007](./docs/adr/0007-kitchen-cli-changes.md), [0008](./docs/adr/0008-cli-auth-fail-closed.md)).
+_Avoid_: Kitchen MCP, paste-token auth, in-app summarize
+
+**Account**:
+**Email** (Clerk, **immutable**) + **username** (changeable at `/account/`). Onboarding placeholder `{domain}-{localPart}`. URLs `username/project`. JWT auth ([ADR 0010](./docs/adr/0010-project-ownership-and-scope.md), [0013](./docs/adr/0013-project-namespace-and-urls.md), [0014](./docs/adr/0014-username-onboarding-and-redirects.md)).
+_Avoid_: Work email sign-up, changing email
+
+**Username redirect**:
+301 after username rename; drop oldest after 5th rename; clear when old slug reclaimed ([ADR 0014](./docs/adr/0014-username-onboarding-and-redirects.md)).
+_Avoid_: Breaking public links on rename
+
+**Project namespace**:
+Project `name` unique per account only — two users may both have `flakebed` ([ADR 0013](./docs/adr/0013-project-namespace-and-urls.md)).
+_Avoid_: Globally unique repo name
+
+**Project ownership**:
+Top-level `~/Projects` entry = project. Cloud `parentId` = account (immutable). `owner` property = session email on push — transferrable ([ADR 0010](./docs/adr/0010-project-ownership-and-scope.md), [0012](./docs/adr/0012-metadata-audit-trail.md)).
+_Avoid_: Git fork/PR, `~/Projects/<account>/` nesting
+
+**Project scope**:
+On project `dir` properties: **`user`** (default), **`org`**, **`public`**. Org attaches via `org:<name>` property + `role:org` write — not via `parentId`.
+_Avoid_: Separate visibility table
+
+**FOSS fork**:
+Copy a `public` project's visible files into your account + `$HOME/Projects`; you own inserts from snapshot forward. No PR — upstream merge requires joining org + Pierre ([ADR 0011](./docs/adr/0011-foss-fork-no-pr.md)).
+_Avoid_: Pull request, git fork
+
+**Public ACL** (FOSS tier):
+`role:public: read` = anon tree + full version history. Per-file `role:public: deny` hides paths from public tree — e.g. `flakebed` hides `.env` ([ADR 0009](./docs/adr/0009-public-acl-discovery.md)).
+_Avoid_: Public write, redacted-but-listed secrets
 
 **Offline queue**:
 Notion-on-phone mirror behavior: local saves while disconnected, durable insert queue, flush on reconnect; remote divergence → fork → merge ([ADR 0006](./docs/adr/0006-offline-save-until-reconnect.md)).

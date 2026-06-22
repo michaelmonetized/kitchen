@@ -43,3 +43,13 @@ Stress-test Kitchen GTM copy against the commenters who will actually show up �
 | 12 | Grill Q7 — **no product AI**; `.kitchen/docs` + Convex CLI for harnesses | ✅ ADR 0005, task 019 |
 | 13 | Grill Q8 — offline = **Notion on phone** (queue → reconnect → merge) | ✅ ADR 0006, task 020 |
 | 14 | Grill Q9 — **`npx kitchen changes`** path `[--since instant]` | ✅ ADR 0007, task 021 |
+| 15 | Grill Q10 — **`npx kitchen auth`**; agents fail closed; `role:public` | ✅ ADR 0008–0009, tasks 021/023 |
+| 16 | Grill Q11 — `public` scope; per-file override; `.env` hidden from tree | ✅ ADR 0009, task 023 |
+| 17 | Grill Q12 (offline) — **local tree free**; full tree diff on reconnect | ✅ ADR 0006, task 020 |
+| 18 | Grill Q13 — account parent; scope **`user` / `org` / `public`**; default **user** | ✅ ADR 0010 |
+| 19 | Grill Q14 — org via property + `role:org` write; parent immutable | ✅ ADR 0010 |
+| 20 | Account parent; FOSS fork; metadata audit | ✅ ADR 0011–0012, tasks 024–025 |
+| 21 | Grill Q15 — account = **email**; **`~/Projects/*` = projects**; owner from JWT | ✅ ADR 0010, task 024 |
+| 22 | Grill Q16 — namespace **per account**; URLs `/<username>/<project>` | ✅ ADR 0013 |
+| 23 | Grill Q17 — `/onboarding` username; ugly placeholder; email immutable; 301 chain | ✅ ADR 0014, task 026 |
+| 24 | Grill Q18 — **C**: keep ugly slug; FOSS URL works; 301 on rename | ✅ ADR 0014 |

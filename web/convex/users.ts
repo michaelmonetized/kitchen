@@ -1,5 +1,6 @@
 import { internalMutation, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { ensureAccountForUser } from "./lib/account";
 
 export const upsertFromClerk = internalMutation({
   args: {
@@ -54,13 +55,22 @@ export const ensureCurrent = mutation({
       .withIndex("by_clerk", (q) => q.eq("clerkId", identity.subject))
       .unique();
 
-    if (existing) return existing._id;
+    if (existing) {
+      await ensureAccountForUser(ctx, existing);
+      return existing._id;
+    }
 
-    return await ctx.db.insert("users", {
+    const userId = await ctx.db.insert("users", {
       clerkId: identity.subject,
       email: identity.email,
       displayName: identity.name ?? undefined,
+      onboardingComplete: false,
+      usernameChangeCount: 0,
       createdAt: Date.now(),
     });
+
+    const user = await ctx.db.get(userId);
+    if (user) await ensureAccountForUser(ctx, user);
+    return userId;
   },
 });

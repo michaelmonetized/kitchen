@@ -15,7 +15,7 @@ async function main(): Promise<void> {
       console.log(`Kitchen mirror client
 
 Usage:
-  kitchen-mirror login   Sign in via browser; saves session to ~/.kitchen/mirror-auth.json
+  kitchen-mirror login   Sign in via browser; saves session to ~/.kitchen/auth.json
   kitchen-mirror start   Sync Convex ↔ $HOME/Projects
 
 Environment:

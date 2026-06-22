@@ -8,7 +8,7 @@ Kitchen is **version control with ACL first** — insert-only history, role-base
 
 **Files are database rows**, not filesystem objects. Your machine sees a familiar tree at `$HOME/Projects`, but that tree is a **mirror** of the Sync Store — maintained in realtime over WebSockets.
 
-**Web client** is not an editor: tree view, Pierre split diffs, per-line blame, version history, rollback, and file-level ACL. **Editing** happens in local tools via the mirror. **No product AI** — review prompts like *"how has this file changed?"* go to the user's harness; it discovers Kitchen via `.kitchen/docs/` + `npx kitchen changes` (or Convex CLI). Daemon auth at `~/.kitchen/mirror-auth.json`.
+**Web client** is not an editor: tree view, Pierre split diffs, per-line blame, version history, rollback, and file-level ACL. **Editing** happens in local tools via the mirror. **No product AI** — review prompts go to the user's harness via `.kitchen/docs/` + `npx kitchen changes`. Human auth: `npx kitchen auth` → `~/.kitchen/auth.json`. Agents on private paths fail closed; human runs auth first. **Account** = immutable **email** + changeable **username** (`/onboarding` → `/account/`). Placeholder `gmail.com-mostlyalice` nudges rename. **301s** on username change (VCS link hygiene). **Project** = top-level `~/Projects`; URLs `username/project`. ([ADR 0010](docs/adr/0010-project-ownership-and-scope.md), [0013](docs/adr/0013-project-namespace-and-urls.md), [0014](docs/adr/0014-username-onboarding-and-redirects.md))
 
 **Offline** — same as Notion on your phone: save locally, queue inserts, flush on reconnect; conflicts merge in web.
 

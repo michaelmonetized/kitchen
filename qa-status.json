@@ -1,0 +1,48 @@
+{
+  "series": "qa",
+  "tasksDir": "tasks/qa",
+  "complete": true,
+  "iteration": 6,
+  "nextTask": null,
+  "tasks": [
+    {
+      "id": "001-shared-libs-errors",
+      "title": "Shared libs + errors + navigation fixes",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "002-convex-id-boundaries",
+      "title": "Convex ID boundaries + fork without useEffect",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "003-file-tree-query",
+      "title": "FileTree single-query refactor",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "004-settings-split",
+      "title": "Split SettingsView + FormAlert + inferred types",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "005-effects-state-dedup",
+      "title": "Effects cleanup + convex dedup + optional zustand/zod",
+      "done": true,
+      "pendingCount": 0
+    },
+    {
+      "id": "006-continue-002-convex-id-boundaries",
+      "title": "continue 002 convex id boundaries",
+      "done": true,
+      "pendingCount": 0
+    }
+  ],
+  "logFile": "/Users/michael/Projects/kitchen/.kitchen-loop/qa/loop.log",
+  "stateFile": "/Users/michael/Projects/kitchen/.kitchen-loop/qa/loop.state.json",
+  "completionPromise": "KITCHEN_QA_COMPLETE"
+}

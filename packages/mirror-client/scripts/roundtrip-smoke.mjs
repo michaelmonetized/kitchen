@@ -18,7 +18,7 @@ const smokeEmail =
 const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL ?? process.env.CONVEX_URL;
 const mirrorRoot =
   process.env.KITCHEN_MIRROR_ROOT ?? path.join(homedir(), "Projects");
-const authFile = path.join(homedir(), ".kitchen", "mirror-auth.json");
+const authFile = path.join(homedir(), ".kitchen", "auth.json");
 
 function fail(msg) {
   console.error(`✗ ${msg}`);

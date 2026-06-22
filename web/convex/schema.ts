@@ -6,10 +6,32 @@ export default defineSchema({
     clerkId: v.string(),
     email: v.string(),
     displayName: v.optional(v.string()),
+    username: v.optional(v.string()),
+    accountFileId: v.optional(v.id("files")),
+    onboardingComplete: v.optional(v.boolean()),
+    usernameChangeCount: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_email", ["email"])
-    .index("by_clerk", ["clerkId"]),
+    .index("by_clerk", ["clerkId"])
+    .index("by_username", ["username"]),
+
+  username_redirects: defineTable({
+    fromUsername: v.string(),
+    toUsername: v.string(),
+    userId: v.id("users"),
+    createdAt: v.number(),
+    dropped: v.boolean(),
+  })
+    .index("by_from", ["fromUsername", "dropped"]),
+
+  file_metadata_events: defineTable({
+    fileId: v.id("files"),
+    authorUserId: v.id("users"),
+    before: v.record(v.string(), v.string()),
+    after: v.record(v.string(), v.string()),
+    createdAt: v.number(),
+  }).index("by_file", ["fileId", "createdAt"]),
 
   roles: defineTable({
     orgFileId: v.id("files"),

@@ -1,6 +1,6 @@
 # Orgs and Roles
 
-Kitchen multi-tenancy is simple: **orgs are root directories**, **projects live under orgs**, and **roles gate access** through file properties.
+Kitchen: **account = email** (Clerk JWT). **Projects** = top-level `~/Projects` entries on disk; cloud `parentId` = account row (immutable). **Orgs** attach via `org:<name>` property when scope elevates. **Roles** gate access on file properties.
 
 ## Org
 
@@ -15,22 +15,32 @@ The org is the billing boundary (future), member namespace, and role definition 
 
 An authenticated user inserts an org File row. They become owner with implicit admin capabilities until ownership transfers.
 
-## Project
+## Account and project
 
-A project is a File with:
-
-- `type: dir`
-- `parent: <org file id>` (exactly one parent, and it must be an org)
-
-All source trees, assets, and nested folders hang under the project root.
+**Account** = user email (one cloud `dir` row per Clerk identity). **Mirror:** each top-level `~/Projects/<name>/` (or top-level file) is a project; daemon sets `owner` from JWT ([ADR 0010](../adr/0010-project-ownership-and-scope.md)):
 
 ```
-Org "Acme Corp"
- ├── Project "acme-web"
- └── Project "acme-mobile"
+~/Projects/                    Cloud:
+├── michael-notes/      →      account(alice@…) → project michael-notes
+├── acme-billing/       →      owner: alice@…, org:acme-corp
+└── flakebed/           →      owner: alice@…, role:public: read
 ```
 
-A project cannot nest inside another project. Flat under org keeps mirror paths predictable.
+- `parentId` = account id — **immutable**
+- `owner` property — transferrable
+- Nested `src/` etc. are files inside the project — not projects
+
+### Projects ([ADR 0010](../adr/0010-project-ownership-and-scope.md))
+
+A project is a **`type: dir` file row** whose **`parentId` is the originating account** (immutable). **`owner`** email on properties; transfer via mutation. **Default scope: `user`**.
+
+| Scope | How | Audience |
+|-------|-----|----------|
+| **`user`** | `"role:user": "write"`, `owner` email | Owner |
+| **`org`** | add `org:<name>`; `"role:org": "write"` | Org members (owner retains read) |
+| **`public`** | add `"role:public": "read"` | FOSS / anonymous + team |
+
+**FOSS fork** ([ADR 0011](../adr/0011-foss-fork-no-pr.md)): copy public tree to your account — no PR. Per-file ACL overrides parent (e.g. `.env` hidden from public).
 
 ## Role table
 
@@ -39,6 +49,7 @@ Each org maintains a **role table** — rows defining named roles:
 | Role name | Capabilities |
 |-----------|--------------|
 | `admin` | Manage roles, assign users, transfer ownership, read/write all project files |
+| `user` | Default private project scope — read/write on project-scoped assignment only |
 | `editor` | Read/write on assigned projects |
 | `viewer` | Read only on assigned projects |
 

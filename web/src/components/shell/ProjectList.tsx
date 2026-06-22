@@ -27,14 +27,14 @@ export function ProjectList() {
 
   return (
     <ul className="grid gap-3 sm:grid-cols-2">
-      {(projects as ProjectRow[]).map(({ org, project }) => (
+      {projects.map(({ org, account, project }) => (
         <li key={String(project._id)}>
           <Link
             href={`/app/projects/${String(project._id)}`}
             className="block rounded-lg border border-stone-200 bg-white p-4 hover:border-stone-400"
           >
             <p className="font-medium text-stone-900">{String(project.name)}</p>
-            <p className="text-sm text-stone-500">{String(org.name)}</p>
+            <p className="text-sm text-stone-500">{org ? String(org.name) : account ? String(account.name) : "Unknown"}</p>
           </Link>
         </li>
       ))}

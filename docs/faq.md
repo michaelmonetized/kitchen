@@ -22,6 +22,16 @@ Kitchen does not host your editor, LSP, or terminal. You work in local tools aga
 
 Solo live sync, async concurrent (fork + merge), and live collab (pair session). See [Three Modes of Work](./concepts/three-modes-of-work.md).
 
+## Account
+
+### Can I change my email?
+
+No. Email is immutable after sign-up — it is your account key. Use a personal address you'll keep; don't sign up with a work email unless you must ([ADR 0014](./adr/0014-username-onboarding-and-redirects.md)).
+
+### How do usernames work?
+
+After sign-up, `/onboarding` asks for one thing: **username**. The placeholder defaults to `{domain}-{localPart}` (e.g. `gmail.com-mostlyalice`). You may submit without changing it — even for FOSS projects, that becomes your public URL until you rename at `/account/`. Old usernames 301 to new ones until the slug is reclaimed or you pass five renames (oldest redirects dropped).
+
 ## Product
 
 ### Is Kitchen a cloud IDE?

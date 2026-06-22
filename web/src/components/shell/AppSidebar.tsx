@@ -11,10 +11,22 @@ export function AppSidebar() {
           Projects
         </Link>
         <Link
+          href="/app/account"
+          className="rounded-md px-2 py-1.5 text-muted-foreground hover:bg-surface hover:text-foreground"
+        >
+          Account
+        </Link>
+        <Link
           href="/app/settings"
           className="rounded-md px-2 py-1.5 text-muted-foreground hover:bg-surface hover:text-foreground"
         >
           Settings
+        </Link>
+        <Link
+          href="/discover"
+          className="rounded-md px-2 py-1.5 text-muted-foreground hover:bg-surface hover:text-foreground"
+        >
+          Discover
         </Link>
       </nav>
     </aside>

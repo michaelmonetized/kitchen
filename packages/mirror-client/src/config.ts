@@ -2,7 +2,8 @@ import { homedir } from "node:os";
 import path from "node:path";
 
 export const KITCHEN_DIR = path.join(homedir(), ".kitchen");
-export const AUTH_FILE = path.join(KITCHEN_DIR, "mirror-auth.json");
+export const AUTH_FILE = path.join(KITCHEN_DIR, "auth.json");
+export const LEGACY_AUTH_FILE = path.join(KITCHEN_DIR, "mirror-auth.json");
 export const QUEUE_DIR = path.join(KITCHEN_DIR, "queue");
 export const STATUS_FILE = path.join(KITCHEN_DIR, "status.json");
 

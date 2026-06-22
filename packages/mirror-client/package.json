@@ -5,6 +5,14 @@
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
+  "exports": {
+    ".": "./dist/index.js",
+    "./auth": "./dist/auth.js",
+    "./config": "./dist/config.js",
+    "./paths": "./dist/paths.js",
+    "./convex-api": "./dist/convex-api.js",
+    "./normalize-path": "./dist/normalize-path.js"
+  },
   "bin": {
     "kitchen-mirror": "./dist/index.js"
   },

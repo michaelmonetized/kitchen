@@ -7,7 +7,8 @@ This project uses **Kitchen**, not git, for version history.
 - **Files** = rows in Convex (`files` table). This directory tree is a **mirror** at `$HOME/Projects/`.
 - **Versions** = insert-only content rows (`versions` table). Every save appends; no `git commit`.
 - **No git** = no `add` / `commit` / `push` / `pull` / `rebase`. History is queryable by path.
-- **Auth** = mirror daemon uses `~/.kitchen/mirror-auth.json` (Clerk session). Same user as the developer.
+- **Auth** = `npx kitchen auth` → `~/.kitchen/auth.json` (Clerk). Mirror daemon uses the same file. Agents on private repos need a human to auth first.
+- **Account** = your email (Clerk JWT via `npx kitchen auth`). **Project** = top-level folder in `~/Projects`; **`owner`** = your email on push. Scope **`user`** / **`org`** / **`public`** on properties. FOSS fork = new `~/Projects/<name>`; no PR.
 - **ACL** = `role:*` properties on file rows; enforced server-side.
 - **Offline** = Notion-on-phone: save locally, queue inserts, flush on reconnect; conflicts → fork → merge in web.
 

@@ -3,7 +3,12 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { exec } from "node:child_process";
 import { promisify } from "node:util";
-import { AUTH_FILE, KITCHEN_DIR, resolveClerkPublishableKey } from "./config.js";
+import {
+  AUTH_FILE,
+  KITCHEN_DIR,
+  LEGACY_AUTH_FILE,
+  resolveClerkPublishableKey,
+} from "./config.js";
 
 const execAsync = promisify(exec);
 
@@ -15,12 +20,19 @@ export type MirrorAuth = {
 };
 
 export async function loadAuth(): Promise<MirrorAuth | null> {
-  try {
-    const raw = await readFile(AUTH_FILE, "utf8");
-    return JSON.parse(raw) as MirrorAuth;
-  } catch {
-    return null;
+  for (const file of [AUTH_FILE, LEGACY_AUTH_FILE]) {
+    try {
+      const raw = await readFile(file, "utf8");
+      const auth = JSON.parse(raw) as MirrorAuth;
+      if (file === LEGACY_AUTH_FILE) {
+        await saveAuth(auth);
+      }
+      return auth;
+    } catch {
+      continue;
+    }
   }
+  return null;
 }
 
 export async function saveAuth(auth: MirrorAuth): Promise<void> {
@@ -68,7 +80,7 @@ function loginHtml(publishableKey: string, port: number): string {
 <html>
 <head>
   <meta charset="utf-8" />
-  <title>Kitchen Mirror Login</title>
+  <title>Kitchen — Sign in</title>
   <script async crossorigin src="https://cdn.jsdelivr.net/npm/@clerk/clerk-js@5/dist/clerk.browser.js"></script>
   <style>
     body { font-family: system-ui, sans-serif; max-width: 420px; margin: 4rem auto; padding: 0 1rem; }
@@ -77,7 +89,7 @@ function loginHtml(publishableKey: string, port: number): string {
   </style>
 </head>
 <body>
-  <h1>Kitchen Mirror — Sign in</h1>
+  <h1>Kitchen — Sign in</h1>
   <div id="sign-in"></div>
   <p id="status">Loading Clerk…</p>
   <script>
@@ -93,7 +105,7 @@ function loginHtml(publishableKey: string, port: number): string {
         await finish(session.id, session.user.id, session.user.primaryEmailAddress?.emailAddress);
         return;
       }
-      status.textContent = "Sign in to sync $HOME/Projects with Kitchen.";
+      status.textContent = "Sign in to Kitchen (CLI + mirror).";
       window.Clerk.mountSignIn(document.getElementById("sign-in"));
       window.Clerk.addListener(({ session }) => {
         if (session) {

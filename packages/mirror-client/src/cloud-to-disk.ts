@@ -35,7 +35,7 @@ export type CloudToDiskOptions = {
     newPath: string,
     fileId: Id<"files">,
   ) => void;
-  onProjectDir?: (absoluteDir: string) => void;
+  onProjectDir?: (absoluteDir: string, projectId: Id<"files">) => void;
   onVersionSynced?: (fileId: Id<"files">, versionId: Id<"versions">) => void;
   onContentHash?: (fileId: Id<"files">, hash: string) => void;
 };
@@ -50,7 +50,10 @@ export class CloudToDiskEngine {
     newPath: string,
     fileId: Id<"files">,
   ) => void;
-  private readonly onProjectDir?: (absoluteDir: string) => void;
+  private readonly onProjectDir?: (
+    absoluteDir: string,
+    projectId: Id<"files">,
+  ) => void;
   private readonly onVersionSynced?: (
     fileId: Id<"files">,
     versionId: Id<"versions">,
@@ -108,14 +111,18 @@ export class CloudToDiskEngine {
   }
 
   private async syncProjects(
-    rows: { org: { name: string }; project: { _id: Id<"files">; name: string } }[],
+    rows: {
+      org: { name: string } | null;
+      project: { _id: Id<"files">; name: string };
+      mirrorName?: string;
+    }[],
   ): Promise<void> {
     const seen = new Set<Id<"files">>();
 
     for (const row of rows) {
       const projectId = row.project._id;
       seen.add(projectId);
-      const slug = projectSlug(row.project.name, row.org.name);
+      const slug = row.mirrorName ?? row.project.name;
       const info: ProjectInfo = {
         projectId,
         slug,
@@ -126,7 +133,7 @@ export class CloudToDiskEngine {
       this.slugToProject.set(slug, info);
       const projectDir = path.join(this.mirrorRoot, slug);
       await mkdir(projectDir, { recursive: true });
-      this.onProjectDir?.(projectDir);
+      this.onProjectDir?.(projectDir, projectId);
       this.ensureChildrenSubscription(projectId, projectId);
     }
 

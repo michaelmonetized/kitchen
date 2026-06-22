@@ -91,7 +91,7 @@ Permissions live **on file rows**, not in a separate ACL service:
 
 ## Agent discovery (not product AI)
 
-Kitchen ships **no** LLM — the stack is primitive enough (Convex, insert-only versions, mirror) that **your** harness already knows how to answer *"how did this file change over N edits?"* via `.kitchen/docs/` + `npx convex`. Not a Kitchen button; emergent discovery.
+Kitchen ships **no** LLM — **your** harness answers *"how did this file change?"* via `.kitchen/docs/` + `npx kitchen changes`. Projects live at **`username/project`** (per-account namespace) — **FOSS**, **org**, or **user** scope at the root.
 
 ## Do not say
 

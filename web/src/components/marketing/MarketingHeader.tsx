@@ -15,6 +15,9 @@ export function MarketingHeader() {
           <Link href="/#three-modes" className="transition-colors hover:text-foreground">
             Work modes
           </Link>
+          <Link href="/discover" className="transition-colors hover:text-foreground">
+            Discover
+          </Link>
           <Link href="/docs" className="transition-colors hover:text-foreground">
             Docs
           </Link>

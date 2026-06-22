@@ -63,7 +63,7 @@ Harness discovers on its own:
 
 1. VCS here but no `.git`
 2. `.kitchen/` → `.kitchen/docs/AGENTS.md`
-3. Insert-only Convex; daemon authed at `~/.kitchen/mirror-auth.json`
+3. Insert-only Convex; `npx kitchen auth` → `~/.kitchen/auth.json` (private paths)
 4. `npx kitchen changes path/to/file [--since <instant>]` for last N inserts
 
 No Kitchen MCP, no summarize button, no custom skill.

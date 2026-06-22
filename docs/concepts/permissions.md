@@ -56,8 +56,20 @@ Properties live on `files.properties` as string key-value pairs. See [Property S
 | `org:<slug>` | emails | Display metadata — not the security boundary |
 | `role:<name>` | `"read"` | Holders of `<name>` may read |
 | `role:<name>` | `"write"` | Holders of `<name>` may insert versions |
+| `role:public` | `"read"` | FOSS-shaped public project — anon tree + content + full version history |
+| `role:public` | `"deny"` | Child override — revoke public; node hidden from anonymous tree ([ADR 0009](../adr/0009-public-acl-discovery.md)) |
 
 **Shorthand notation** in prose: `role:editor:write` means key `role:editor` with value `write`.
+
+### Project visibility (scope on project `dir` row)
+
+See [ADR 0010](../adr/0010-project-ownership-and-scope.md). Project `parentId` = account (immutable). **Default `user`**:
+
+- **`user`** — `owner` + `role:user: write`
+- **`org`** — add `org:<name>`; write → `role:org` (Q14)
+- **`public`** — add `role:public: read` — FOSS
+
+Scope/owner changes audited ([ADR 0012](../adr/0012-metadata-audit-trail.md)).
 
 ## Authorization algorithm
 
@@ -104,6 +116,17 @@ Override on a sensitive file:
 ```
 
 Only admins write this file; editors read only.
+
+### Public project with secret file
+
+```
+flakebed/          { "role:public": "read", "role:editor": "write" }   ← FOSS
+ ├── src/          (inherits public)
+ ├── README.md     (inherits public)
+ └── .env          { "role:public": "deny", "role:editor": "write" }   ← contributors only
+```
+
+Anonymous users: see `src/`, `README.md`; **`.env` absent from tree**. Authenticated editors: see all.
 
 Exact merge order (child wins on key collision) is implementation detail. Semantics: **most specific file wins**.
 

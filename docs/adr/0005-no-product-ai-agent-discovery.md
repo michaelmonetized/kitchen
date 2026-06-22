@@ -11,7 +11,7 @@ The harness should discover the model on its own:
 1. **VCS-shaped project, no `.git`** — something else owns history
 2. **`.kitchen/` folder** — local metadata for the mirror
 3. **`.kitchen/docs/AGENTS.md`** — insert-only Convex, files = rows, versions = appends
-4. **`~/.kitchen/mirror-auth.json`** — daemon already authenticated as this user
+4. **`~/.kitchen/auth.json`** — human ran `npx kitchen auth`; mirror daemon shares it
 5. **`npx kitchen changes <path> [--since <instant>]`** — canonical CLI ([ADR 0007](./0007-kitchen-cli-changes.md)); or `npx convex run` for power users
 
 No Kitchen MCP server, no custom skill, no in-app AI button. The harness already knows CLI + VCS + Convex; `.kitchen/docs/` is a short pointer, not a new protocol.

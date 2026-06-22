@@ -50,6 +50,14 @@ Sign up, create a project, edit a file, and watch live sync across tabs.
 npm install && npm run build -w @kitchen/mirror-client && npm run login -w @kitchen/mirror-client && npm run mirror
 ```
 
+**Kitchen CLI** (agent/human history + auth):
+
+```bash
+npm run build:cli
+npx kitchen auth                              # browser OAuth → ~/.kitchen/auth.json
+npx kitchen changes src/index.ts --limit 10   # version history JSON
+```
+
 ```bash
 cd web && npm run ship          # Convex prod + Vercel prod + smoke
 SMOKE_BASE_URL=https://kitchen-gilt-nine.vercel.app node web/scripts/smoke.mjs

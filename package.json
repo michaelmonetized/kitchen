@@ -12,6 +12,8 @@
     "dev:web": "npm run dev -w web",
     "dev:mirror": "npm run dev -w @kitchen/mirror-client",
     "mirror": "npm run start -w @kitchen/mirror-client",
+    "build:cli": "npm run build -w @kitchen/mirror-client && npm run build -w @kitchen/cli",
+    "verify:cli": "npm run verify -w @kitchen/cli",
     "smoke:mirror": "node scripts/mirror-smoke.mjs",
     "build:web": "npm run build -w web",
     "loop": "bash loop.sh",
@@ -21,5 +23,11 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "dependencies": {
+    "@kitchen/cli": "*"
+  },
+  "devDependencies": {
+    "playwright": "^1.44.1"
   }
 }

@@ -3,7 +3,14 @@ import type { MutationCtx, QueryCtx } from "./_generated/server";
 import { v } from "convex/values";
 import type { Doc, Id } from "./_generated/dataModel";
 import { ConvexError } from "convex/values";
-import { hasAdmin } from "./lib/authz";
+import {
+  defaultProjectProperties,
+  ensureAccountForUser,
+  isAccountFile,
+  isLegacyOrgFile,
+} from "./lib/account";
+import { assertCanWrite, hasAdmin } from "./lib/authz";
+import { recordMetadataEvent } from "./lib/metadataAudit";
 import { isOrg } from "./lib/invariants";
 import { requireUser } from "./lib/session";
 
@@ -408,11 +415,48 @@ export const setProjectProperties = mutation({
       throw new ConvexError("NOT_FOUND");
     }
 
-    await assertOrgAdmin(ctx, user._id, project.parentId);
+    await assertCanWrite(ctx, user._id, args.projectId);
 
+    const before = { ...project.properties };
     await ctx.db.patch(args.projectId, {
       properties: args.properties,
       updatedAt: Date.now(),
+    });
+
+    await recordMetadataEvent(ctx, {
+      fileId: args.projectId,
+      authorUserId: user._id,
+      before,
+      after: args.properties,
+    });
+  },
+});
+
+export const createAccountProject = mutation({
+  args: { name: v.string() },
+  handler: async (ctx, args) => {
+    const user = await requireUser(ctx);
+    const accountId = await ensureAccountForUser(ctx, user);
+    const name = args.name.trim();
+    if (!name) throw new ConvexError("INVALID_INPUT");
+
+    const siblings = await ctx.db
+      .query("files")
+      .withIndex("by_parent", (q) => q.eq("parentId", accountId))
+      .collect();
+    if (siblings.some((s) => s.name === name)) {
+      throw new ConvexError("SIBLING_NAME_CONFLICT");
+    }
+
+    const now = Date.now();
+    return await ctx.db.insert("files", {
+      type: "dir",
+      name,
+      parentId: accountId,
+      properties: defaultProjectProperties(user.email),
+      forked: false,
+      createdAt: now,
+      updatedAt: now,
     });
   },
 });
@@ -489,41 +533,28 @@ export const ensurePersonalOrg = mutation({
   args: {},
   handler: async (ctx) => {
     const user = await requireUser(ctx);
-    const orgMap = await userOrgRoles(ctx, user._id);
-    if (orgMap.size > 0) return null;
+    const accountId = await ensureAccountForUser(ctx, user);
 
-    const slug = user.email.split("@")[0].toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    const existing = await ctx.db
+      .query("files")
+      .withIndex("by_parent", (q) => q.eq("parentId", accountId))
+      .collect();
+
+    if (existing.some((f) => f.type === "dir")) {
+      return { accountId, projectId: existing[0]!._id };
+    }
+
     const now = Date.now();
-
-    const orgId = await ctx.db.insert("files", {
-      type: "dir",
-      name: `${user.displayName ?? slug}'s Org`,
-      parentId: undefined,
-      properties: {
-        [`org:${slug}`]: user.email,
-      },
-      forked: false,
-      createdAt: now,
-      updatedAt: now,
-    });
-
-    const roleIds = await ensureDefaultRoles(ctx, orgId);
-
-    await ctx.db.insert("user_roles", {
-      userId: user._id,
-      roleId: roleIds.admin,
-    });
-
     const projectId = await ctx.db.insert("files", {
       type: "dir",
       name: "sample-project",
-      parentId: orgId,
-      properties: { ...DEFAULT_PROJECT_PROPERTIES },
+      parentId: accountId,
+      properties: defaultProjectProperties(user.email),
       forked: false,
       createdAt: now,
       updatedAt: now,
     });
 
-    return { orgId, projectId };
+    return { accountId, projectId };
   },
 });

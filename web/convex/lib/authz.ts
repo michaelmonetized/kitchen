@@ -1,6 +1,12 @@
 import type { Doc, Id } from "../_generated/dataModel";
 import type { MutationCtx, QueryCtx } from "../_generated/server";
 import { ConvexError } from "convex/values";
+import {
+  findOrgIdForProject,
+  isAccountFile,
+  isLegacyOrgFile,
+  projectRootFromChain,
+} from "./account";
 
 type Ctx = QueryCtx | MutationCtx;
 
@@ -25,7 +31,12 @@ function mergeProperties(chain: Doc<"files">[]): Record<string, string> {
 
 export async function getOrgId(ctx: Ctx, fileId: Id<"files">): Promise<Id<"files">> {
   const chain = await getAncestorChain(ctx, fileId);
-  const org = chain.find((f) => f.parentId === undefined);
+  const project = projectRootFromChain(chain);
+  if (project) {
+    const orgFromProject = await findOrgIdForProject(ctx, project);
+    if (orgFromProject) return orgFromProject;
+  }
+  const org = chain.find((f) => isLegacyOrgFile(f));
   if (!org) throw new ConvexError("ORG_NOT_FOUND");
   return org._id;
 }
@@ -71,11 +82,20 @@ function hasGrant(
   return false;
 }
 
-function projectRootId(chain: Doc<"files">[]): Id<"files"> | undefined {
-  const org = chain.find((f) => f.parentId === undefined);
-  if (!org) return undefined;
-  if (chain.length === 1) return undefined;
-  return chain[chain.length - 2]?._id;
+function ownerEmail(props: Record<string, string>): string | undefined {
+  return props.owner?.trim().toLowerCase();
+}
+
+/** Anonymous read when merged properties grant `role:public: read` (not `deny`). */
+export async function canReadAnonymous(
+  ctx: Ctx,
+  fileId: Id<"files">,
+): Promise<boolean> {
+  const chain = await getAncestorChain(ctx, fileId);
+  if (chain.length === 0) return false;
+  const props = mergeProperties(chain);
+  if (props["role:public"] === "deny") return false;
+  return props["role:public"] === "read";
 }
 
 export async function canRead(
@@ -85,11 +105,30 @@ export async function canRead(
 ): Promise<boolean> {
   const chain = await getAncestorChain(ctx, fileId);
   if (chain.length === 0) return false;
-  const orgId = chain.find((f) => f.parentId === undefined)!._id;
-  if (await hasAdmin(ctx, userId, orgId)) return true;
+
+  const user = await ctx.db.get(userId);
+  if (!user) return false;
+
   const props = mergeProperties(chain);
-  const roles = await userRoleNames(ctx, userId, orgId, projectRootId(chain));
-  return hasGrant(props, roles, "read");
+  const owner = ownerEmail(props);
+  if (owner && owner === user.email.trim().toLowerCase()) return true;
+
+  const project = projectRootFromChain(chain);
+  const projectId = project?._id;
+
+  try {
+    const orgId = await getOrgId(ctx, fileId);
+    if (await hasAdmin(ctx, userId, orgId)) return true;
+    const roles = await userRoleNames(ctx, userId, orgId, projectId);
+    if (hasGrant(props, roles, "read")) return true;
+  } catch {
+    // Account-only project without org attachment
+    if (props["role:user"] === "read" || props["role:user"] === "write") {
+      if (owner === user.email.trim().toLowerCase()) return true;
+    }
+  }
+
+  return false;
 }
 
 export async function canWrite(
@@ -99,11 +138,27 @@ export async function canWrite(
 ): Promise<boolean> {
   const chain = await getAncestorChain(ctx, fileId);
   if (chain.length === 0) return false;
-  const orgId = chain.find((f) => f.parentId === undefined)!._id;
-  if (await hasAdmin(ctx, userId, orgId)) return true;
+
+  const user = await ctx.db.get(userId);
+  if (!user) return false;
+
   const props = mergeProperties(chain);
-  const roles = await userRoleNames(ctx, userId, orgId, projectRootId(chain));
-  return hasGrant(props, roles, "write");
+  const owner = ownerEmail(props);
+  if (owner && owner === user.email.trim().toLowerCase()) {
+    if (props["role:user"] === "write") return true;
+  }
+
+  const project = projectRootFromChain(chain);
+  const projectId = project?._id;
+
+  try {
+    const orgId = await getOrgId(ctx, fileId);
+    if (await hasAdmin(ctx, userId, orgId)) return true;
+    const roles = await userRoleNames(ctx, userId, orgId, projectId);
+    return hasGrant(props, roles, "write");
+  } catch {
+    return owner === user.email.trim().toLowerCase() && props["role:user"] === "write";
+  }
 }
 
 export async function assertCanRead(
@@ -143,3 +198,5 @@ export async function hasAdmin(
   }
   return false;
 }
+
+export { isAccountFile, isLegacyOrgFile };

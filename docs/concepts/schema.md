@@ -66,13 +66,16 @@ files ◄─────────────┘         └── scoped to 
 | `createdAt` | number | yes | |
 | `updatedAt` | number | yes | Metadata only |
 
-**Parent invariants** (enforced in mutations):
+**Parent invariants** (target — [ADR 0010](../adr/0010-project-ownership-and-scope.md); `./web` may lag until task 024):
 
-| Kind | `parentId` |
-|------|------------|
-| Org | `null` |
-| Project | org file id |
-| Folder / file | project or folder id |
+| Kind | `parentId` | Mirror |
+|------|------------|--------|
+| Org | `null` | (cloud roles namespace) |
+| Account | `null` | identity = user email (Clerk) |
+| Project | **account** id (immutable) | **top-level** `~/Projects/<name>/` or file |
+| Folder / file | project or folder id | inside project tree |
+
+`properties.owner` = session email on project push. Org via `org:<name>` property, not `parentId`.
 
 ### `versions`
 

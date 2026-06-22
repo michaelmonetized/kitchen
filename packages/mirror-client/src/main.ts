@@ -11,6 +11,7 @@ import { InsertQueue } from "./insert-queue.js";
 import { normalizeAbsolutePath } from "./normalize-path.js";
 import { flushInsertQueue } from "./queue-flush.js";
 import { TrayStatus } from "./tray-status.js";
+import { reconcileTree } from "./tree-reconcile.js";
 
 const JWT_REFRESH_MS = 50 * 60 * 1000;
 
@@ -18,7 +19,7 @@ export async function runMirror(): Promise<void> {
   const loaded = await loadAuth();
   if (!loaded) {
     throw new Error(
-      "No saved session — run `npm run login -w @kitchen/mirror-client` first",
+      "No saved session — run `npx kitchen auth` or `kitchen-mirror login` first",
     );
   }
   const auth = loaded;
@@ -72,6 +73,7 @@ export async function runMirror(): Promise<void> {
           disk.noteCloudHash(fileId, hash);
         },
       });
+      await reconcileTree(client, mirrorRoot, cloud.slugIndex, cloud.treeNodes, echo, tray);
     } finally {
       flushing = false;
       await refreshTray();
@@ -121,8 +123,8 @@ export async function runMirror(): Promise<void> {
     onContentHash: (fileId, hash) => {
       disk.noteCloudHash(fileId, hash);
     },
-    onProjectDir: (absoluteDir) => {
-      void ensureAgentDiscoveryKit(absoluteDir, convexUrl);
+    onProjectDir: (absoluteDir, projectId) => {
+      void ensureAgentDiscoveryKit(absoluteDir, convexUrl, projectId);
       void disk.watchDirectory(absoluteDir);
     },
   });
