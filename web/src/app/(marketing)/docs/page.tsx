@@ -76,6 +76,23 @@ export default function DocsPage() {
           then explore the repository docs for full depth.
         </p>
 
+        <div className="mt-8 grid gap-4 sm:grid-cols-2">
+          <Link
+            href="/vision"
+            className="rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent"
+          >
+            <p className="text-sm font-medium uppercase tracking-widest text-accent">Vision</p>
+            <p className="mt-2 font-semibold text-foreground">Cloud holds truth. Disk is a mirror.</p>
+          </Link>
+          <Link
+            href="/mission"
+            className="rounded-xl border border-border bg-surface p-5 transition-colors hover:border-accent"
+          >
+            <p className="text-sm font-medium uppercase tracking-widest text-accent">Mission</p>
+            <p className="mt-2 font-semibold text-foreground">Make the model obvious.</p>
+          </Link>
+        </div>
+
         <section className="mt-12">
           <h2 className="text-xl font-semibold text-foreground">Core guides</h2>
           <div className="mt-6 space-y-8">

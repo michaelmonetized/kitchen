@@ -34,13 +34,18 @@ export function MarketingFooter() {
               <p className="font-medium text-foreground">Learn</p>
               <ul className="mt-3 space-y-2 text-muted">
                 <li>
-                  <Link href="/docs" className="hover:text-foreground">
-                    Documentation
+                  <Link href="/vision" className="hover:text-foreground">
+                    Vision
                   </Link>
                 </li>
                 <li>
-                  <Link href="/#three-modes" className="hover:text-foreground">
-                    Three modes
+                  <Link href="/mission" className="hover:text-foreground">
+                    Mission
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/docs" className="hover:text-foreground">
+                    Documentation
                   </Link>
                 </li>
               </ul>

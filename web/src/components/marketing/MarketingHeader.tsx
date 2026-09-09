@@ -18,6 +18,12 @@ export function MarketingHeader() {
           <Link href="/discover" className="transition-colors hover:text-foreground">
             Discover
           </Link>
+          <Link href="/vision" className="transition-colors hover:text-foreground">
+            Vision
+          </Link>
+          <Link href="/mission" className="transition-colors hover:text-foreground">
+            Mission
+          </Link>
           <Link href="/docs" className="transition-colors hover:text-foreground">
             Docs
           </Link>
